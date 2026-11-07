@@ -1,0 +1,9 @@
+# Gizli anahtarlar — ASLA GitHub'a yüklenmez
+.env
+.env.local
+.env*.local
+
+# Vercel ve Node dosyaları
+.vercel
+node_modules
+.DS_Store

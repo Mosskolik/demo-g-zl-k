@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Görme engelli öğrenciler için sesli matematik asistanı">
+  <title>Sesli Matematik Asistanı</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Başlangıç ekranı: tarayıcılar ses ve kamerayı ancak bir dokunuştan sonra açar -->
+  <button id="startScreen" class="start" aria-label="Sesli matematik asistanını başlatmak için ekrana dokun">
+    <span class="start-title">Sesli Matematik Asistanı</span>
+    <span class="start-sub">Başlamak için ekrana dokun</span>
+  </button>
+
+  <main id="app" hidden>
+    <!-- Büyük dokunma alanı: dokun = fotoğraf çek (konuşurken dokun = sustur) -->
+    <button id="captureArea" class="capture" aria-label="Fotoğraf çekmek için dokun. Ben konuşurken dokunursan susarım.">
+      <video id="video" playsinline muted autoplay aria-hidden="true"></video>
+      <span class="capture-label" aria-hidden="true">
+        <span class="big">DOKUN</span>
+        <span>fotoğraf çek</span>
+      </span>
+    </button>
+
+    <!-- Kısa durum mesajları ekran okuyucuya bildirilir -->
+    <p id="status" class="status" role="status" aria-live="polite">Hazır</p>
+
+    <!-- Asistanın son söylediği metin (az görenler için büyük yazı) -->
+    <section id="replyBox" class="reply" aria-label="Asistanın son söylediği" tabindex="0">
+      <p id="reply"></p>
+    </section>
+
+    <!-- Büyük butonlar -->
+    <nav class="buttons" aria-label="Komutlar">
+      <button id="btnTalk" class="btn wide talk" aria-label="Konuş. Dokun ve komutunu ya da sorunu söyle.">🎤 Konuş</button>
+      <button id="btnRepeat" class="btn" aria-label="Tekrar et">Tekrar</button>
+      <button id="btnSlow" class="btn" aria-label="Yavaş oku">Yavaş oku</button>
+      <button id="btnYes" class="btn" aria-label="Evet, devam et">Evet / Devam</button>
+      <button id="btnSolve" class="btn" aria-label="Çöz">Çöz</button>
+      <button id="btnAnswer" class="btn" aria-label="Cevabım. Dokun ve cevabını söyle.">Cevabım</button>
+      <button id="btnNew" class="btn" aria-label="Yeni soru">Yeni soru</button>
+      <button id="btnStop" class="btn wide stop" aria-label="Dur, sesi kes">Dur</button>
+    </nav>
+
+    <!-- Yazarak kullanma (iPhone'da mikrofon çalışmazsa) -->
+    <form id="textForm" class="textform" autocomplete="off">
+      <label for="textInput">Yaz ve gönder (ör. "cevabım 5", "çöz", "evet")</label>
+      <div class="row">
+        <input id="textInput" type="text" enterkeyhint="send" inputmode="text">
+        <button class="btn send" type="submit">Gönder</button>
+      </div>
+    </form>
+
+    <details class="settings">
+      <summary>Ayarlar ve galeri</summary>
+      <label class="file btn">
+        🖼️ Galeriden görsel yükle
+        <input id="fileInput" type="file" accept="image/*" aria-label="Galeriden görsel yükle">
+      </label>
+      <label for="rate">Okuma hızı: <output id="rateOut">1.0</output></label>
+      <input id="rate" type="range" min="0.5" max="1.6" step="0.1" value="1.0">
+      <label class="check"><input id="autoListen" type="checkbox"> Konuştuktan sonra beni otomatik dinle</label>
+      <label class="check"><input id="srMode" type="checkbox"> Ekran okuyucu kullanıyorum (uygulamanın kendi sesini kapat)</label>
+      <button id="btnHelp" class="btn" type="button">Komutları dinle</button>
+      <p class="hint">Komutlar: çek, tekrar et, yavaş oku, çöz, cevabım …, yeni soru, dur.</p>
+    </details>
+  </main>
+
+  <!-- Ekran okuyucu modunda uzun cevaplar buradan okunur -->
+  <div id="srLive" class="sr-only" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
