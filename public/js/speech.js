@@ -2,6 +2,8 @@
 // SES: sesli okuma (konuşma sentezi) ve konuşma tanıma — Web Speech API, tr-TR
 // =============================================================
 
+import { diag } from './diag.js';
+
 const synth = window.speechSynthesis;
 let trVoice = null;
 
@@ -24,6 +26,8 @@ export const speaker = {
   _token: 0,
 
   get supported() { return Boolean(synth); },
+  get voiceName() { return trVoice ? `${trVoice.name} (${trVoice.lang})` : 'yok'; },
+  get voiceCount() { return synth?.getVoices().length || 0; },
 
   /** iPhone'da ilk dokunuşta sesi "açmak" için boş okuma yapılır */
   unlock() {
@@ -42,6 +46,7 @@ export const speaker = {
   say(text, { rate, remember = true } = {}) {
     if (!text) return Promise.resolve();
     if (remember) this.lastText = text;
+    const wasBusy = Boolean(synth && (synth.speaking || synth.pending));
     this.stop();
     if (!synth || this.muted) return Promise.resolve();
 
@@ -53,24 +58,44 @@ export const speaker = {
     return new Promise((resolve) => {
       let i = 0;
       const next = () => {
+        clearTimeout(this._watchdog);
         if (token !== this._token) return resolve(); // durduruldu
         if (i >= parts.length) {
           this.speaking = false; this.onChange?.(false);
           return resolve();
         }
-        const u = new SpeechSynthesisUtterance(parts[i++]);
+        const part = parts[i++];
+        const u = new SpeechSynthesisUtterance(part);
         u.lang = 'tr-TR';
         if (trVoice) u.voice = trVoice;
         u.rate = rate || this.rate;
-        u.onend = next;
-        u.onerror = next;
+        let done = false;
+        const finish = (ev) => {
+          if (done) return;
+          done = true;
+          if (ev?.error && !['interrupted', 'canceled'].includes(ev.error)) diag('tts-hata', { e: ev.error });
+          next();
+        };
+        u.onend = () => finish();
+        u.onerror = (ev) => finish(ev);
+        // Android Chrome'da "bitti" olayı bazen hiç gelmiyor; uygulama takılmasın diye
+        // cümlenin tahmini süresi + 4 sn sonra kendiliğinden sıradakine geç.
+        const estimate = (part.length * 110) / u.rate + 4000;
+        this._watchdog = setTimeout(() => {
+          if (done || token !== this._token) return;
+          diag('tts-zamanasimi', { uzunluk: part.length });
+          finish();
+        }, estimate);
         synth.speak(u);
+        if (synth.paused) synth.resume(); // Chrome bazen motoru duraklatılmış bırakıyor
       };
-      next();
+      // Android: cancel() hemen ardından speak() bazen yeni cümleyi yutuyor → kısa bekle
+      setTimeout(next, wasBusy ? 150 : 0);
     });
   },
 
   stop() {
+    clearTimeout(this._watchdog);
     this._token++;
     if (synth && (synth.speaking || synth.pending)) synth.cancel();
     if (this.speaking) { this.speaking = false; this.onChange?.(false); }
@@ -116,7 +141,7 @@ export const listener = {
 
       rec.onstart = () => { this.active = true; this.onChange?.(true); };
       rec.onresult = (e) => { result = e.results[0]?.[0]?.transcript || ''; };
-      rec.onerror = (e) => { failed = e.error; };
+      rec.onerror = (e) => { failed = e.error; if (e.error !== 'no-speech' && e.error !== 'aborted') diag('dinleme-hata', { e: e.error }); };
       rec.onend = () => {
         this.active = false; this.onChange?.(false); this._rec = null;
         if (failed && failed !== 'no-speech' && failed !== 'aborted') {

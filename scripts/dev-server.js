@@ -21,8 +21,11 @@ if (fs.existsSync(envFile)) {
 }
 
 // Ayarlar .env okunduktan SONRA yüklenmeli
-const chat = (await import('../api/chat.js')).default;
-const health = (await import('../api/health.js')).default;
+// api/ klasöründeki her dosya bir uç nokta: /api/chat → api/chat.js
+const apiHandlers = {};
+for (const f of fs.readdirSync(path.join(root, 'api'))) {
+  if (f.endsWith('.js')) apiHandlers['/api/' + f.slice(0, -3)] = (await import('../api/' + f)).default;
+}
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.js': 'text/javascript',
   '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon',
@@ -33,8 +36,7 @@ const PORT = Number(process.env.PORT) || 3000;
 http.createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   try {
-    if (url.pathname === '/api/chat') return await chat(req, res);
-    if (url.pathname === '/api/health') return health(req, res);
+    if (apiHandlers[url.pathname]) return await apiHandlers[url.pathname](req, res);
 
     // Statik dosyalar (public klasörü)
     const file = path.join(root, 'public', url.pathname === '/' ? 'index.html' : url.pathname);

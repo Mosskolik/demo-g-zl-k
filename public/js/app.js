@@ -14,6 +14,7 @@ import { CameraSource, FileSource } from './imageSource.js';
 import { checkQuality, QUALITY_MESSAGES } from './quality.js';
 import { parseCommand, HELP_TEXT } from './commands.js';
 import { askAI, errorMessage } from './api.js';
+import { diag } from './diag.js';
 
 // ---------- Ekran öğeleri ----------
 const $ = (id) => document.getElementById(id);
@@ -105,12 +106,19 @@ el.start.addEventListener('click', async () => {
   requestWakeLock();
 
   if (!speaker.supported) setStatus('Bu tarayıcı sesli okumayı desteklemiyor. Yazılar ekranda görünecek.');
+  diag('basla', {
+    sesliOkuma: speaker.supported, sesTanima: listener.supported, ses: speaker.voiceName, sesSayisi: speaker.voiceCount,
+    surekliDinle: el.autoListen.checked, ekranOkuyucuModu: speaker.muted, ekran: `${innerWidth}x${innerHeight}`,
+  });
+  setTimeout(() => diag('sesler', { ses: speaker.voiceName, sesSayisi: speaker.voiceCount }), 3000);
 
   try {
     await camera.start();
     cameraOk = true;
+    diag('kamera', { ok: true, w: el.video.videoWidth, h: el.video.videoHeight });
   } catch (err) {
     cameraOk = false;
+    diag('kamera', { ok: false, e: err.name || err.code });
     const msg = err.name === 'NotAllowedError'
       ? 'Kamera izni verilmedi. Ekrana dokununca telefonun kamera uygulaması açılacak. İstersen ayarlardan galeriden görsel de yükleyebilirsin.'
       : 'Canlı kamera açılamadı. Ekrana dokununca telefonun kamera uygulaması açılacak.';
@@ -173,7 +181,7 @@ el.file.addEventListener('change', async () => {
  */
 async function processImage({ canvas, base64 }, { strict }) {
   const q = checkQuality(canvas);
-  console.log('Fotoğraf kalitesi', q);
+  diag('foto', { kaynak: strict ? 'kamera' : 'galeri', w: canvas.width, h: canvas.height, ...q, kb: Math.round(base64.length * 0.75 / 1024) });
   if (!q.ok && (strict || q.problem === 'dark')) {
     fb.error();
     await reply(QUALITY_MESSAGES[q.problem]);
@@ -275,6 +283,7 @@ async function correctPage(correction) {
 async function handleInput(raw, { voice = false } = {}) {
   const cmd = parseCommand(raw);
   if (cmd.type === 'empty') return;
+  diag('komut', { tur: cmd.type, kaynak: voice ? 'ses' : 'yazi/buton', asama: state.phase, kelime: raw.trim().split(/\s+/).length });
   setStatus('Duyduğum: ' + raw);
 
   // Cevap bekleniyorsa söylenen şey (komut değilse) öğrencinin cevabıdır
@@ -358,6 +367,7 @@ async function handleInput(raw, { voice = false } = {}) {
 // ---------- Dinleme ----------
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let loopRunning = false;
+let emptyListens = 0;
 
 function handsFreeOn() {
   return el.autoListen.checked && listener.supported && !speaker.muted;
@@ -381,9 +391,13 @@ async function listenLoop() {
       try {
         const text = await listener.listenOnce();
         fails = 0;
-        if (text) await handleInput(text, { voice: true });
-        else if (Date.now() - t0 < 800) await sleep(800); // çok hızlı bittiyse biraz bekle
+        if (text) { emptyListens = 0; await handleInput(text, { voice: true }); }
+        else {
+          if (++emptyListens % 10 === 0) diag('dinleme-bos', { sayi: emptyListens, ms: Date.now() - t0 });
+          if (Date.now() - t0 < 800) await sleep(800); // çok hızlı bittiyse biraz bekle
+        }
       } catch (err) {
+        diag('dinleme-dongu-hata', { e: err.code, sayi: fails + 1 });
         if (err.code === 'not-allowed' || err.code === 'service-not-allowed') {
           el.autoListen.checked = false; saveSettings(); fb.error();
           await speaker.say('Mikrofon izni verilmedi. Tarayıcı ayarlarından mikrofon iznini aç. O zamana kadar ekrandaki butonlar ve yazı kutusu kullanılabilir.');

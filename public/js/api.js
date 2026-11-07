@@ -4,6 +4,8 @@
 // otomatik olarak bekleyip yeniden dener.
 // =============================================================
 
+import { diag } from './diag.js';
+
 const MAX_RETRIES = 3;
 const TIMEOUT_MS = 125_000; // sunucu en fazla 120 sn çalışır
 
@@ -20,6 +22,7 @@ export async function askAI(payload, { onWait } = {}) {
     if (!navigator.onLine) throw new ApiError('OFFLINE', 'İnternet yok');
 
     let res, data;
+    const started = Date.now();
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
@@ -31,11 +34,13 @@ export async function askAI(payload, { onWait } = {}) {
       });
       data = await res.json().catch(() => ({}));
     } catch (err) {
+      diag('api-ag-hatasi', { mod: payload.mode, e: err.name, ms: Date.now() - started });
       throw new ApiError(err.name === 'AbortError' ? 'TIMEOUT' : 'OFFLINE', err.message);
     } finally {
       clearTimeout(timer);
     }
 
+    diag('api', { mod: payload.mode, s: res.status, kod: data.code, model: data.model, ms: Date.now() - started, deneme: attempt });
     if (res.ok) return data;
 
     // Dakikalık sınır veya yoğunluk → bekle ve yeniden dene

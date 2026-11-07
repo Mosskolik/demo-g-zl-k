@@ -83,8 +83,10 @@ scripts/
   test-api.js            ← Otomatik testler
 ```
 
-**Model değiştirmek:** Vercel'de `GEMINI_MODEL` ortam değişkenini ekle (ör. `gemini-2.5-flash`) veya `lib/config.js` dosyasını düzenle.
-Varsayılan model `gemini-flash-latest`, yani Google'ın en güncel Flash modeli. Bu model kullanılamazsa uygulama sırayla `gemini-2.5-flash` ve `gemini-2.5-flash-lite` modellerini dener.
+**Model değiştirmek:** Vercel'de `GEMINI_MODEL` ortam değişkenini ekle (ör. `gemini-3.1-flash-lite`) veya `lib/config.js` dosyasını düzenle.
+Varsayılan model `gemini-3.5-flash`. Bu model kullanılamazsa, 30 saniyede cevap vermezse ya da ücretsiz kotası yoksa uygulama sırayla `gemini-3.1-flash-lite` ve `gemini-3.5-flash-lite` modellerini dener.
+API anahtarının erişebildiği modellerin listesi: `https://senin-linkin.vercel.app/api/models`.
+Google modelleri zamanla kaldırıyor. Hata alırsan önce bu listeye bak.
 
 **Yerel model (Ollama):** `lib/providers/ollama.js` dosyasındaki açıklamaya bak. Bu seçenek sadece yerel testte çalışır.
 
