@@ -84,6 +84,17 @@ function notice(text) {
   return speaker.say(text, { remember: false });
 }
 
+// Sesli okuma çalışmıyorsa (ör. telefonda Türkçe ses paketi yok) görünür uyarı + titreşim
+// (Asistanın cevabı ekranda kalır; uyarı ayrı bir şerit olarak en üstte görünür.)
+speaker.onBroken = () => {
+  fb.error();
+  const warn = $('ttsWarn');
+  warn.textContent = '⚠️ SESLİ OKUMA ÇALIŞMIYOR. Telefonda Türkçe ses yüklü olmayabilir. ' +
+    'Android: Ayarlar → Erişilebilirlik (veya Genel yönetim) → Metin okuma çıkışı → Google → ' +
+    'Ses verilerini yükle → Türkçe. Sonra sayfayı yenile.';
+  warn.hidden = false;
+};
+
 let beepBeforeListen = true; // asistan konuştuktan sonra dinlemeye geçerken kısa bip
 speaker.onChange = (on) => {
   el.capture.classList.toggle('speaking', on);

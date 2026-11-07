@@ -20,6 +20,7 @@
     <!-- TÜM EKRAN tek dokunma alanı: dokun = fotoğraf çek, asistan konuşurken dokun = sustur.
          Görme engelli öğrenci butonları kullanmaz; her şey sesle yürür. -->
     <div class="stage">
+      <p id="ttsWarn" class="tts-warn" role="alert" hidden></p>
       <button id="captureArea" class="capture" aria-label="Ekranın her yeri. Fotoğraf çekmek için dokun. Ben konuşurken dokunursan susarım. Diğer her şeyi sesle söyleyebilirsin.">
         <video id="video" playsinline muted autoplay aria-hidden="true"></video>
         <span class="capture-label" aria-hidden="true">

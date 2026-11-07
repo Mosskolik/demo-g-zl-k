@@ -23,6 +23,7 @@ export const speaker = {
   muted: false,       // ekran okuyucu modunda uygulama kendi sesini kapatır
   speaking: false,
   lastText: '',
+  failures: 0,      // art arda başarısız okuma sayısı (Türkçe ses yoksa artar)
   _token: 0,
 
   get supported() { return Boolean(synth); },
@@ -73,7 +74,10 @@ export const speaker = {
         const finish = (ev) => {
           if (done) return;
           done = true;
-          if (ev?.error && !['interrupted', 'canceled'].includes(ev.error)) diag('tts-hata', { e: ev.error });
+          if (ev?.error && !['interrupted', 'canceled'].includes(ev.error)) {
+            this.failures++;
+            if (this.failures === 3) { diag('tts-hata', { e: ev.error, ses: this.voiceName }); this.onBroken?.(ev.error); }
+          } else if (!ev?.error) this.failures = 0;
           next();
         };
         u.onend = () => finish();

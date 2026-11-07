@@ -33,6 +33,11 @@ Sonunda notlarını bana gönder.
 
 ❗ **Mikrofon izni hiç sorulmadıysa** ya da "Dinliyorum" görünmüyorsa bunu not al.
 
+❗ **Hiç ses gelmiyorsa:** Önce sessiz modu ve ses düzeyini kontrol et.
+Ekranda "SESLİ OKUMA ÇALIŞMIYOR" yazıyorsa telefonda Türkçe ses yüklü değildir. Android'de şu yolu izle:
+**Ayarlar → Erişilebilirlik** (bazı telefonlarda **Genel yönetim**) **→ Metin okuma çıkışı → Tercih edilen motor: Google → Ses verilerini yükle → Türkçe**.
+Sonra sayfayı yenile.
+
 ---
 
 ## 2. Soru sayfası (sadece sesle)
