@@ -123,7 +123,43 @@ git push
 
 ---
 
-## 🚀 Vercel'de yayınlama (bir kez yapılır)
+## 🚀 GitHub OLMADAN Vercel'e yükleme (Vercel CLI ile)
+
+GitHub hesabın kullanılamıyorsa kodu doğrudan Vercel'e yükleyebilirsin.
+Bu işlem kendi bilgisayarından **bir kez** yapılır. Sonrasında uygulama tamamen Vercel'in bulutunda çalışır,
+yani gösterim sırasında bilgisayarının kapalı olması sorun değildir.
+
+1. [nodejs.org](https://nodejs.org) adresinden **LTS** sürümünü indir ve kur. Kurulumda hep **Next**'e basman yeterli.
+2. Bu proje klasörünü (zip'ten çıkardığın klasörü) aç.
+   Windows'ta klasörün boş bir yerine **Shift + sağ tık → "Terminalde aç"** (veya "PowerShell penceresini burada aç") seç.
+3. Vercel'e giriş yapmak için şu komutu çalıştır:
+   ```bash
+   npx vercel login
+   ```
+   İlk sorulan "Ok to proceed?" sorusuna **y** yazıp Enter'a bas.
+   Açılan tarayıcıda giriş yap. GitHub ile giriş yapamıyorsan **Continue with Email** seç ve e-postana gelen kodu gir.
+4. Projeyi yüklemek için şu komutu çalıştır:
+   ```bash
+   npx vercel
+   ```
+   Soruları şöyle cevapla:
+   - "Set up and deploy?" → **y**
+   - "Which scope?" → kendi adını seç ve Enter'a bas
+   - "Link to existing project?" → **n**
+   - "What's your project's name?" → `matematik-asistani` yaz
+   - "In which directory is your code located?" → sadece Enter'a bas
+   - Ayarları değiştirmek isteyip istemediğin sorulursa → **n**
+5. [vercel.com](https://vercel.com)'da projeyi aç → **Settings → Environment Variables**.
+   **Key** kutusuna `GEMINI_API_KEY` yaz, **Value** kutusuna anahtarını yapıştır ve **Save**'e bas.
+6. Asıl (herkese açık) yayını yapmak için şu komutu çalıştır:
+   ```bash
+   npx vercel --prod
+   ```
+   Komutun sonunda çıkan `https://matematik-asistani-….vercel.app` linki uygulamanın adresidir.
+
+Kodda bir değişiklik olursa son komutu (`npx vercel --prod`) tekrar çalıştırman yeterli.
+
+## 🚀 Vercel'de yayınlama — GitHub ile (bir kez yapılır)
 
 1. [vercel.com](https://vercel.com) adresine git ve **GitHub ile giriş yap**.
 2. Sağ üstte **Add New… → Project**'e tıkla.
