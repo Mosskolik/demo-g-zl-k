@@ -15,7 +15,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *   type: ready | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -24,6 +24,14 @@ export function parseCommand(raw) {
   const only = (...opts) => opts.includes(t);
 
   if (!t) return { type: 'empty' };
+
+  // "hazırım" → öğrenci cevap vermeye hazır (cevap kalıbından ÖNCE kontrol edilmeli)
+  if (/^(hazırım|hazır|ben hazırım|tamam hazırım|evet hazırım|hazırım cevap vereceğim|cevap vereceğim|cevaplayacağım|cevabı söyleyeceğim)$/.test(t)) return { type: 'ready' };
+
+  // "çözemedim", "cevabı söyle", "bilmiyorum" → çözümü ve cevabı anlat (cevap kalıbından ÖNCE)
+  if (/(çözemedim|çözemiyorum|yapamadım|yapamıyorum|bilmiyorum|bulamadım|cevabı söyle|cevabı ver|cevabı nedir|cevabı ne|cevap ne|cevap nedir|doğru cevap ne|cevabı açıkla|nasıl çözülür|pes ediyorum)/.test(t)) {
+    return { type: 'solve', arg: 'gaveUp' };
+  }
 
   // "cevabım 5", "cevap b şıkkı", "benim cevabım 12"
   const ans = t.match(/^(?:benim )?(?:cevabım|cevap|yanıtım|yanıt)(?: şu)?\s*(.*)$/);
@@ -49,11 +57,13 @@ export function parseCommand(raw) {
 
 export const HELP_TEXT =
   'Kullanabileceğin komutlar şunlar. ' +
-  'Çek: fotoğraf çeker. Ekranın üst yarısına dokunarak da çekebilirsin. ' +
+  'Çek: fotoğraf çeker. Ekranın herhangi bir yerine dokunarak da çekebilirsin. Ben konuşurken dokunursan susarım. ' +
   'Tekrar et: son söylediğimi tekrarlar. ' +
   'Yavaş oku: daha yavaş okur. ' +
-  'Çöz: soruyu adım adım çözer. ' +
-  'Cevabım, ve ardından cevabın: cevabını kontrol eder. ' +
+  'Çöz, ya da çözemedim, cevabı söyle: soruyu adım adım çözer ve cevabı açıklarım. ' +
+  'Hazırım: cevabını vermeye hazır olduğunu söyler; sonra cevabını söylersin, ben kontrol ederim. ' +
+  'Ya da doğrudan cevabım deyip cevabını söyleyebilirsin. ' +
+  'Evet ya da devam: konu anlatımında devam ederim. ' +
   'Yeni soru: baştan başlar. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';

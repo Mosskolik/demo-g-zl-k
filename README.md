@@ -11,15 +11,27 @@ Sayfa konu anlatımıysa konuyu adım adım anlatır. Soruysa ipucu vermeden sor
 
 ---
 
-## 📱 Nasıl kullanılır?
+## 📱 Nasıl kullanılır? (tamamen sesle — buton gerekmez)
 
-1. Linki telefonda aç ve ekrana dokun. Kamera ve mikrofon izni sorulursa **İzin ver**'e bas.
-2. Sayfayı telefonun altına koy ve **ekranın üst yarısına dokun**. Fotoğraf çekilir.
+Uygulama **sürekli dinler**: asistan susunca mikrofon kendiliğinden açılır.
+Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir yerine dokunmak yeterli.
+
+1. Linki telefonda aç ve **ekranın herhangi bir yerine dokun**.
+   Tarayıcılar ses ve kamerayı ancak bir dokunuştan sonra açar. Bu ilk dokunuşu öğretmen yapabilir.
+   Kamera ve mikrofon izni sorulursa **İzin ver**'e bas.
+2. Sayfayı telefonun altına koy ve **ekrana dokun** ya da **"çek"** de. Fotoğraf çekilir.
    Fotoğraf karanlık veya bulanıksa asistan sesli uyarır ve fotoğrafı yapay zekâya göndermez.
+   Prototipte ekranın **en altındaki "Galeriden görsel ekle"** butonuyla hazır bir görsel de seçebilirsin.
 3. Asistan okuduğunu sesli söyler ve **"Doğru anladım mı?"** diye sorar.
    - **"Evet"** dersen devam eder.
    - **"Hayır, … olacak"** dersen düzeltir.
-4. Sonrasında:
+4. Sayfanın türüne göre:
+   - **Konu anlatımı sayfası:** Asistan konuyu adım adım anlatır ve ara ara "Devam edeyim mi?" diye sorar. **"Evet"** ya da **"devam"** de.
+   - **Soru sayfası:** Asistan soruyu **çözüm yolu veya ipucu vermeden** anlatır.
+     Öğrenci istediği kadar düşünür. Hazır olunca **"hazırım"** der ve ardından cevabını söyler.
+     Doğruysa asistan tebrik eder. Yanlışsa cevabı söylemeden tekrar düşünmeye teşvik eder.
+   - Öğrenci **"çözemedim"**, **"cevabı söyle"** ya da **"bilmiyorum"** derse asistan soruyu adım adım çözer ve cevabı açıklar.
+5. Komutlar:
 
 | Söyle (veya butona bas / yaz) | Ne olur? |
 |---|---|
@@ -27,13 +39,20 @@ Sayfa konu anlatımıysa konuyu adım adım anlatır. Soruysa ipucu vermeden sor
 | **tekrar et** | Son söylediğini tekrarlar |
 | **yavaş oku** | Daha yavaş tekrar okur (hız ayarlardan da değişir) |
 | **çöz** | Soruyu adım adım çözer |
-| **cevabım …** (ör. "cevabım beş") | Doğruysa tebrik eder. Yanlışsa cevabı söylemeden düşünmeye teşvik eder |
+| **hazırım** | "Cevabını söyle" der ve cevabını dinler |
+| **cevabım …** (ör. "cevabım beş") | Cevabı doğrudan kontrol eder. Doğruysa tebrik eder, yanlışsa cevabı söylemeden teşvik eder |
+| **çözemedim / cevabı söyle** | Soruyu adım adım çözer ve cevabı açıklar |
 | **evet / devam** | Konu anlatımına devam eder |
 | **yeni soru** | Baştan başlar |
 | **dur** | Susar. Konuşurken ekrana dokunmak da susturur |
+| **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 
-Kamera olmadan denemek için: **Ayarlar ve galeri → Galeriden görsel yükle**.
+Öğrenci düşünürken kendi kendine söylediği tek kelimeler (ör. "hmm") yok sayılır ve yapay zekâya gönderilmez.
+Bu, ücretsiz istek hakkını korur. Cevap beklenirken söylenen tek kelime ise cevap sayılır.
+
+Ekranın altındaki butonlar ve yazı kutusu, **gören yardımcılar** (öğretmen, aile) ve sesli komutun çalışmadığı durumlar içindir.
+Android'de mikrofon her açıldığında telefon kısa bir ses çıkarabilir. Bu normaldir.
 
 ---
 
@@ -157,7 +176,7 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
 | "Bugünkü ücretsiz kullanım hakkı doldu" | Günlük kota doldu. Ertesi gün sıfırlanır. İstersen Vercel'de `GEMINI_MODEL` ile başka bir Flash modeli dene. |
 | Kamera açılmıyor | Link **https** ile mi açıldı? İzin verildi mi? Olmazsa galeriden yükle. |
 | Ses yok | Sessiz modu kapat ve sesi aç. Ekrana bir kez dokunmak gerekir (tarayıcı kuralı). |
-| Sesli komut çalışmıyor | Mikrofon iznini kontrol et. iPhone'da butonları veya yazı kutusunu kullan. |
+| Sesli komut çalışmıyor | Mikrofon iznini kontrol et. Ayarlar'da **Sürekli dinle** açık olsun. iPhone'da olmazsa butonları veya yazı kutusunu kullan. |
 | Vercel linki giriş istiyor | Sadece önizleme linkleri giriş ister. Projenin **Domains** bölümündeki ana `….vercel.app` linkini kullan. |
 | `/api/health` 404 veriyor | Vercel'de Framework Preset'in `Other` olduğundan emin ol. |
 

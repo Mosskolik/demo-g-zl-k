@@ -14,7 +14,7 @@ const cases = [
   ['Çek', 'capture'], ['fotoğraf çek', 'capture'], ['Tekrar et', 'repeat'], ['yavaş oku', 'slow'],
   ['Çöz', 'solve'], ['çözer misin', 'solve'], ['Cevabım 5', 'answer'], ['yeni soru', 'newq'],
   ['Dur!', 'stop'], ['evet', 'yes'], ['hayır x küp olacak', 'no'], ['devam et', 'continue'],
-  ['Çekirdek nedir', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
+  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['Çekirdek nedir', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
 ];
 for (const [text, type] of cases) assert.equal(parseCommand(text).type, type, `"${text}" → ${type}`);
 assert.equal(parseCommand('cevabım B şıkkı').arg, 'b şıkkı');

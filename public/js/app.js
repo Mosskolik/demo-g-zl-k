@@ -55,7 +55,7 @@ speaker.rate = Number(settings.rate);
 speaker.muted = settings.srMode;
 
 function loadSettings() {
-  const def = { rate: 1.0, autoListen: !isIOS, srMode: false };
+  const def = { rate: 1.0, autoListen: true, srMode: false }; // sürekli dinleme her cihazda varsayılan
   try { return { ...def, ...JSON.parse(localStorage.getItem('ayarlar') || '{}') }; } catch { return def; }
 }
 function saveSettings() {
@@ -70,11 +70,12 @@ function saveSettings() {
 function setStatus(text) { el.status.textContent = text; }
 
 /** Asistanın asıl cevabı: ekrana büyük yazar, sesli okur, gerekirse dinlemeye geçer */
-async function reply(text, { listenAfter = true } = {}) {
+// (Sürekli dinleme açıksa, okuma bitince mikrofon kendiliğinden açılır — bkz. listenLoop)
+async function reply(text) {
   el.reply.textContent = text;
   if (speaker.muted) el.srLive.textContent = text; // ekran okuyucu okusun
   await speaker.say(text);
-  if (listenAfter) maybeAutoListen();
+  listenLoop();
 }
 
 /** Kısa bilgi mesajı (tekrar et ile tekrarlanmaz) */
@@ -83,8 +84,14 @@ function notice(text) {
   return speaker.say(text, { remember: false });
 }
 
-speaker.onChange = (on) => el.capture.classList.toggle('speaking', on);
+let beepBeforeListen = true; // asistan konuştuktan sonra dinlemeye geçerken kısa bip
+speaker.onChange = (on) => {
+  el.capture.classList.toggle('speaking', on);
+  // Asistan konuşurken mikrofonu kapat: yoksa kendi sesini öğrencinin sözü sanar
+  if (on) { listener.stop(); beepBeforeListen = true; }
+};
 listener.onChange = (on) => {
+  el.capture.classList.toggle('listening', on);
   el.talk.classList.toggle('listening', on);
   el.talk.textContent = on ? '👂 Dinliyorum…' : '🎤 Konuş';
 };
@@ -108,13 +115,15 @@ el.start.addEventListener('click', async () => {
     const msg = err.name === 'NotAllowedError'
       ? 'Kamera izni verilmedi. Ekrana dokununca telefonun kamera uygulaması açılacak. İstersen ayarlardan galeriden görsel de yükleyebilirsin.'
       : 'Canlı kamera açılamadı. Ekrana dokununca telefonun kamera uygulaması açılacak.';
-    await reply(msg, { listenAfter: false });
+    await reply(msg);
   }
 
-  const micNote = listener.supported ? 'Konuşmak için Konuş butonuna bas.' : 'Bu tarayıcıda sesli komut yok; büyük butonları veya yazmayı kullanabilirsin.';
+  const micNote = listener.supported
+    ? 'Seni sürekli dinliyorum; fotoğraf için çek de diyebilirsin. Ben konuşurken susmamı istersen ekrana dokun. Komutları öğrenmek için yardım de.'
+    : 'Bu tarayıcıda sesli komut çalışmıyor. Ekrandaki butonları veya yazı kutusunu kullanabilirsin.';
   await reply(
-    'Merhaba! Ben matematik asistanınım. Matematik sayfasını telefonun altına koy ve ekranın üst yarısına dokun, fotoğrafını çekeyim. ' + micNote,
-    { listenAfter: true },
+    'Merhaba! Ben matematik asistanınım. Matematik sayfasını telefonun altına koy. ' +
+    'Ekranın herhangi bir yerine dokununca fotoğrafını çekerim. ' + micNote,
   );
 });
 
@@ -122,7 +131,7 @@ el.start.addEventListener('click', async () => {
 async function requestWakeLock() {
   try { await navigator.wakeLock?.request('screen'); } catch { /* desteklenmiyorsa sorun değil */ }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') requestWakeLock(); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWakeLock(); listenLoop(); } });
 
 // ---------- Fotoğraf çekme ----------
 el.capture.addEventListener('click', () => {
@@ -154,7 +163,7 @@ el.file.addEventListener('change', async () => {
   try {
     await processImage(await files.captureFile(f), { strict: false });
   } catch {
-    fb.error(); await reply('Bu dosyayı açamadım. Başka bir görsel dene.', { listenAfter: false });
+    fb.error(); await reply('Bu dosyayı açamadım. Başka bir görsel dene.');
   }
 });
 
@@ -168,7 +177,7 @@ async function processImage({ canvas, base64 }, { strict }) {
   console.log('Fotoğraf kalitesi', q);
   if (!q.ok && (strict || q.problem === 'dark')) {
     fb.error();
-    await reply(QUALITY_MESSAGES[q.problem], { listenAfter: false });
+    await reply(QUALITY_MESSAGES[q.problem]);
     return;
   }
 
@@ -182,7 +191,7 @@ async function processImage({ canvas, base64 }, { strict }) {
 async function handlePage(page) {
   if (!page || page.okunabilir === false) {
     state.phase = state.page ? state.phase : 'idle';
-    await reply((page?.not || 'Sayfayı okuyamadım.') + ' Lütfen tekrar çek.', { listenAfter: false });
+    await reply((page?.not || 'Sayfayı okuyamadım.') + ' Lütfen tekrar çek.');
     return;
   }
   state.page = page;
@@ -216,7 +225,7 @@ async function callAI(payload, waitingText = 'Düşünüyorum.') {
     console.warn(err);
     fb.error();
     setStatus('Hata');
-    await reply(errorMessage(err), { listenAfter: false });
+    await reply(errorMessage(err));
     return null;
   } finally {
     stopTicks();
@@ -254,18 +263,33 @@ function proceed() {
 }
 
 // ---------- Komutları işleme ----------
-async function handleInput(raw) {
+/**
+ * @param {string} raw  söylenen veya yazılan metin
+ * @param {{voice?:boolean}} opts  voice=true → mikrofondan geldi (gürültü filtresi uygulanır)
+ */
+async function handleInput(raw, { voice = false } = {}) {
   const cmd = parseCommand(raw);
   if (cmd.type === 'empty') return;
   setStatus('Duyduğum: ' + raw);
 
+  // Cevap bekleniyorsa söylenen şey (komut değilse) öğrencinin cevabıdır
+  if (state.phase === 'awaitAnswer' && ['free', 'yes', 'no', 'continue', 'answer'].includes(cmd.type)) {
+    const answer = cmd.type === 'answer' ? cmd.arg : raw;
+    if (!answer) return reply('Seni dinliyorum. Cevabını söyle.');
+    state.phase = 'question';
+    return talk('check', 'Öğrencinin cevabı: ' + answer);
+  }
+
+  // Öğrenci düşünürken kendi kendine söylediği tek kelimeleri yapay zekâya gönderme
+  // (ücretsiz istek hakkını korur). Komutlar ve cevaplar bundan etkilenmez.
+  if (voice && cmd.type === 'free' && !['correcting'].includes(state.phase) && raw.trim().split(/\s+/).length < 2) {
+    setStatus('Anlamadım: "' + raw + '". Komutlar için yardım de.');
+    return;
+  }
+
   // Bekleme aşamalarında söylenen şey doğrudan o işe gider
   if (state.phase === 'correcting' && ['free', 'no'].includes(cmd.type)) {
     return correctPage(cmd.arg || raw);
-  }
-  if (state.phase === 'awaitAnswer' && cmd.type === 'free') {
-    state.phase = 'question';
-    return talk('check', 'Öğrencinin cevabı: ' + raw);
   }
 
   switch (cmd.type) {
@@ -287,7 +311,7 @@ async function handleInput(raw) {
     case 'newq':
       state.page = null; state.history = []; state.phase = 'idle';
       el.reply.textContent = '';
-      return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.', { listenAfter: false });
+      return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.');
     case 'yes':
     case 'continue':
       if (state.phase === 'confirm') return proceed();
@@ -304,7 +328,13 @@ async function handleInput(raw) {
     case 'solve':
       if (!state.page) return notice('Önce sorunun fotoğrafını çekmelisin. Ekrana dokun.');
       state.phase = 'question';
-      return talk('solve', 'Bu soruyu adım adım çöz.');
+      return talk('solve', cmd.arg === 'gaveUp'
+        ? 'Çözemedim, cevabı söyler misin? (Öğrencinin söylediği: ' + raw + ')'
+        : 'Bu soruyu adım adım çöz.');
+    case 'ready':
+      if (!state.page) return reply('Önce sorunun fotoğrafını çekelim. Ekrana dokun ya da çek de.');
+      state.phase = 'awaitAnswer';
+      return reply('Tamam, seni dinliyorum. Cevabını söyle.');
     case 'answer':
       if (!state.page) return notice('Önce sorunun fotoğrafını çekmelisin. Ekrana dokun.');
       if (!cmd.arg) { state.phase = 'awaitAnswer'; return reply('Tamam, cevabını söyle.'); }
@@ -318,7 +348,56 @@ async function handleInput(raw) {
 }
 
 // ---------- Dinleme ----------
-async function listen() {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let loopRunning = false;
+
+function handsFreeOn() {
+  return el.autoListen.checked && listener.supported && !speaker.muted;
+}
+
+/**
+ * SÜREKLİ DİNLEME (eller serbest): asistan susunca mikrofon kendiliğinden açılır,
+ * söylenen her şey işlenir, sonra tekrar dinlenir. Buton gerekmez.
+ * Asistan konuşurken veya düşünürken mikrofon kapalıdır.
+ */
+async function listenLoop() {
+  if (loopRunning || !handsFreeOn()) return;
+  loopRunning = true;
+  let fails = 0;
+  try {
+    while (handsFreeOn()) {
+      if (speaker.speaking || state.busy || document.visibilityState !== 'visible') { await sleep(250); continue; }
+      if (beepBeforeListen) { fb.listen(); beepBeforeListen = false; await sleep(200); }
+      setStatus('Dinliyorum…');
+      const t0 = Date.now();
+      try {
+        const text = await listener.listenOnce();
+        fails = 0;
+        if (text) await handleInput(text, { voice: true });
+        else if (Date.now() - t0 < 800) await sleep(800); // çok hızlı bittiyse biraz bekle
+      } catch (err) {
+        if (err.code === 'not-allowed' || err.code === 'service-not-allowed') {
+          el.autoListen.checked = false; saveSettings(); fb.error();
+          await speaker.say('Mikrofon izni verilmedi. Tarayıcı ayarlarından mikrofon iznini aç. O zamana kadar ekrandaki butonlar ve yazı kutusu kullanılabilir.');
+          break;
+        }
+        if (++fails >= 5) {
+          fb.error();
+          await speaker.say(err.code === 'network'
+            ? 'Ses tanıma için internet gerekiyor. Bağlantını kontrol et.'
+            : 'Ses tanıma şu an çalışmıyor. Ekrana dokunup sayfayı yeniden açmayı dene.');
+          break;
+        }
+        await sleep(1000 * fails);
+      }
+    }
+  } finally {
+    loopRunning = false;
+  }
+}
+
+/** Sürekli dinleme kapalıyken Konuş butonu: bir kez dinler */
+async function listenOnceManual() {
   if (state.busy) return notice('Bekle, hâlâ düşünüyorum.');
   if (!listener.supported) {
     el.input.focus();
@@ -329,24 +408,11 @@ async function listen() {
   setStatus('Dinliyorum…');
   try {
     const text = await listener.listenOnce();
-    if (text) await handleInput(text);
-    else setStatus('Bir şey duymadım. Konuş butonuna tekrar bas.');
+    if (text) await handleInput(text, { voice: true });
+    else setStatus('Bir şey duymadım.');
   } catch (err) {
     fb.error();
-    if (err.code === 'not-allowed' || err.code === 'service-not-allowed') {
-      el.autoListen.checked = false; saveSettings();
-      await reply('Mikrofon izni verilmedi. Butonları kullanabilir ya da yazabilirsin. İzni tarayıcı ayarlarından açabilirsin.', { listenAfter: false });
-    } else if (err.code === 'network') {
-      await reply('Ses tanıma için internet gerekiyor. Bağlantını kontrol et.', { listenAfter: false });
-    } else {
-      setStatus('Ses tanıma çalışmadı. Tekrar dene ya da yaz.');
-    }
-  }
-}
-
-function maybeAutoListen() {
-  if (el.autoListen.checked && listener.supported && !state.busy && !speaker.muted && document.visibilityState === 'visible') {
-    listen();
+    setStatus(err.code === 'not-allowed' ? 'Mikrofon izni verilmedi.' : 'Ses tanıma çalışmadı. Tekrar dene ya da yaz.');
   }
 }
 
@@ -358,7 +424,10 @@ function setRate(r) {
 }
 
 // ---------- Butonlar ----------
-el.talk.addEventListener('click', () => (listener.active ? listener.stop() : listen()));
+el.talk.addEventListener('click', () => {
+  if (handsFreeOn()) { speaker.stop(); listenLoop(); return; } // zaten dinliyor; konuşuyorsa sustur
+  if (listener.active) listener.stop(); else listenOnceManual();
+});
 el.repeat.addEventListener('click', () => handleInput('tekrar et'));
 el.slow.addEventListener('click', () => handleInput('yavaş oku'));
 el.yes.addEventListener('click', () => handleInput('evet'));
@@ -377,11 +446,12 @@ el.form.addEventListener('submit', (e) => {
 
 el.rate.addEventListener('input', () => setRate(Number(el.rate.value)));
 el.rate.addEventListener('change', () => speaker.say('Okuma hızı bu şekilde.', { remember: false }));
-el.autoListen.addEventListener('change', saveSettings);
+el.autoListen.addEventListener('change', () => { saveSettings(); if (el.autoListen.checked) listenLoop(); else listener.stop(); });
 el.srMode.addEventListener('change', () => {
   speaker.muted = el.srMode.checked;
-  if (speaker.muted) speaker.stop();
+  if (speaker.muted) { speaker.stop(); listener.stop(); }
   saveSettings();
+  listenLoop();
 });
 
 // İnternet bağlantısı değişince haber ver

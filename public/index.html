@@ -17,17 +17,27 @@
   </button>
 
   <main id="app" hidden>
-    <!-- Büyük dokunma alanı: dokun = fotoğraf çek (konuşurken dokun = sustur) -->
-    <button id="captureArea" class="capture" aria-label="Fotoğraf çekmek için dokun. Ben konuşurken dokunursan susarım.">
-      <video id="video" playsinline muted autoplay aria-hidden="true"></video>
-      <span class="capture-label" aria-hidden="true">
-        <span class="big">DOKUN</span>
-        <span>fotoğraf çek</span>
-      </span>
-    </button>
+    <!-- TÜM EKRAN tek dokunma alanı: dokun = fotoğraf çek, asistan konuşurken dokun = sustur.
+         Görme engelli öğrenci butonları kullanmaz; her şey sesle yürür. -->
+    <div class="stage">
+      <button id="captureArea" class="capture" aria-label="Ekranın her yeri. Fotoğraf çekmek için dokun. Ben konuşurken dokunursan susarım. Diğer her şeyi sesle söyleyebilirsin.">
+        <video id="video" playsinline muted autoplay aria-hidden="true"></video>
+        <span class="capture-label" aria-hidden="true">
+          <span class="big">DOKUN</span>
+          <span>fotoğraf çek</span>
+          <span class="ear">👂 Dinliyorum — konuşabilirsin</span>
+        </span>
+      </button>
+      <!-- Kısa durum mesajları ekran okuyucuya bildirilir -->
+      <p id="status" class="status" role="status" aria-live="polite">Hazır</p>
+      <!-- Prototip için: kamera yerine galeriden görsel ekleme butonu (ekranın en altında) -->
+      <label class="gallery-btn">
+        🖼️ Galeriden görsel ekle
+        <input id="fileInput" type="file" accept="image/*" aria-label="Galeriden görsel ekle">
+      </label>
+    </div>
 
-    <!-- Kısa durum mesajları ekran okuyucuya bildirilir -->
-    <p id="status" class="status" role="status" aria-live="polite">Hazır</p>
+    <p class="helper-title">Aşağısı gören yardımcılar (öğretmen, aile) içindir:</p>
 
     <!-- Asistanın son söylediği metin (az görenler için büyük yazı) -->
     <section id="replyBox" class="reply" aria-label="Asistanın son söylediği" tabindex="0">
@@ -56,14 +66,10 @@
     </form>
 
     <details class="settings">
-      <summary>Ayarlar ve galeri</summary>
-      <label class="file btn">
-        🖼️ Galeriden görsel yükle
-        <input id="fileInput" type="file" accept="image/*" aria-label="Galeriden görsel yükle">
-      </label>
+      <summary>Ayarlar</summary>
       <label for="rate">Okuma hızı: <output id="rateOut">1.0</output></label>
       <input id="rate" type="range" min="0.5" max="1.6" step="0.1" value="1.0">
-      <label class="check"><input id="autoListen" type="checkbox"> Konuştuktan sonra beni otomatik dinle</label>
+      <label class="check"><input id="autoListen" type="checkbox"> Sürekli dinle (eller serbest, buton gerekmez)</label>
       <label class="check"><input id="srMode" type="checkbox"> Ekran okuyucu kullanıyorum (uygulamanın kendi sesini kapat)</label>
       <button id="btnHelp" class="btn" type="button">Komutları dinle</button>
       <p class="hint">Komutlar: çek, tekrar et, yavaş oku, çöz, cevabım …, yeni soru, dur.</p>
