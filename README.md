@@ -222,6 +222,22 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
 
 ---
 
+## 🩺 Tanı kaydı ve kontrol sayfaları
+
+- `/api/health` — API anahtarı eklenmiş mi?
+- `/api/models` — API anahtarının erişebildiği Gemini modelleri.
+- **Tanı kaydı:** Uygulama telefonda olan olayları Vercel günlüğüne yazar (`/api/log`). Örneğin: komut türü, sunucu cevap kodu ve süresi, ses tanıma ve sesli okuma hataları, JavaScript hataları.
+  Söylenen cümleler, ses ve fotoğraf **gönderilmez**.
+  Vercel'de **Proje → Logs** sekmesinden görülebilir. Ücretsiz planda kayıtlar 30 dakika saklanır.
+- Telefonda adım adım test için: **[TEST.md](TEST.md)**
+
+## 📊 Ücretsiz kota hakkında (Kasım 2026 ölçümü)
+
+- `gemini-3.5-flash` ücretsiz katmanda **günde yalnızca 20 istek** veriyor.
+- Her modelin kotası ayrı. Bir model dolunca uygulama otomatik olarak sıradaki modele geçer (`gemini-3.1-flash-lite`, sonra `gemini-3.5-flash-lite`).
+- Günlük kota Türkiye saatiyle yaklaşık 11:00'de (yaz aylarında 10:00'da) yenilenir.
+- Kalan kotanı https://aistudio.google.com/usage sayfasından görebilirsin.
+
 ## 🔒 Gizlilik ve güvenlik
 
 - API anahtarı yalnızca Vercel sunucusunda durur. Tarayıcı koduna ve GitHub'a hiç girmez.
