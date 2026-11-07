@@ -89,9 +89,10 @@ function notice(text) {
 speaker.onBroken = () => {
   fb.error();
   const warn = $('ttsWarn');
-  warn.textContent = '⚠️ SESLİ OKUMA ÇALIŞMIYOR. Telefonda Türkçe ses yüklü olmayabilir. ' +
-    'Android: Ayarlar → Erişilebilirlik (veya Genel yönetim) → Metin okuma çıkışı → Google → ' +
-    'Ses verilerini yükle → Türkçe. Sonra sayfayı yenile.';
+  warn.textContent = '⚠️ SESLİ OKUMA ÇALIŞMIYOR: Telefonda Türkçe ses yok. ' +
+    'Ayarlar → Sistem → Diller ve giriş → Gelişmiş → Metin okuma çıkışı → ' +
+    'Tercih edilen motor: "Google Konuşma Hizmetleri" → ⚙️ → Ses verilerini yükle → Türkçe. ' +
+    'Sonra Chrome\'u tamamen kapatıp yeniden aç.';
   warn.hidden = false;
 };
 
@@ -121,7 +122,7 @@ el.start.addEventListener('click', async () => {
     sesliOkuma: speaker.supported, sesTanima: listener.supported, ses: speaker.voiceName, sesSayisi: speaker.voiceCount,
     surekliDinle: el.autoListen.checked, ekranOkuyucuModu: speaker.muted, ekran: `${innerWidth}x${innerHeight}`,
   });
-  setTimeout(() => diag('sesler', { ses: speaker.voiceName, sesSayisi: speaker.voiceCount }), 3000);
+  setTimeout(() => diag('sesler', { ses: speaker.voiceName, sesSayisi: speaker.voiceCount, diller: speaker.voiceLangs }), 3000);
 
   try {
     await camera.start();

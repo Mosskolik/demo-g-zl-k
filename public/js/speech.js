@@ -10,8 +10,8 @@ let trVoice = null;
 // Türkçe sesi bul (sesler tarayıcıda geç yüklenebilir)
 function pickVoice() {
   const voices = synth?.getVoices() || [];
-  trVoice = voices.find((v) => v.lang === 'tr-TR' && v.localService)
-    || voices.find((v) => v.lang?.toLowerCase().startsWith('tr')) || null;
+  const isTr = (v) => /^tr([-_]|$)/i.test(v.lang || '');
+  trVoice = voices.find((v) => isTr(v) && v.localService) || voices.find(isTr) || null;
 }
 if (synth) {
   pickVoice();
@@ -29,6 +29,8 @@ export const speaker = {
   get supported() { return Boolean(synth); },
   get voiceName() { return trVoice ? `${trVoice.name} (${trVoice.lang})` : 'yok'; },
   get voiceCount() { return synth?.getVoices().length || 0; },
+  // Telefondaki seslerin dil kodları (tanı için; ör. "en-US,de-DE")
+  get voiceLangs() { return [...new Set((synth?.getVoices() || []).map((v) => v.lang))].join(','); },
 
   /** iPhone'da ilk dokunuşta sesi "açmak" için boş okuma yapılır */
   unlock() {
