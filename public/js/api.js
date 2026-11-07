@@ -5,7 +5,7 @@
 // =============================================================
 
 const MAX_RETRIES = 3;
-const TIMEOUT_MS = 70_000;
+const TIMEOUT_MS = 125_000; // sunucu en fazla 120 sn çalışır
 
 export class ApiError extends Error {
   constructor(code, message) { super(message); this.code = code; }
@@ -39,7 +39,8 @@ export async function askAI(payload, { onWait } = {}) {
     if (res.ok) return data;
 
     // Dakikalık sınır veya yoğunluk → bekle ve yeniden dene
-    const code = data.code || 'UNKNOWN';
+    // (504 = Vercel zaman aşımı; bu durumda gövde JSON olmayabilir)
+    const code = data.code || (res.status === 504 ? 'TIMEOUT' : 'UNKNOWN');
     if ((code === 'RATE_LIMIT' || code === 'OVERLOADED') && attempt <= MAX_RETRIES) {
       const wait = Math.min(60, Math.max(5, Number(data.retryAfter) || 15));
       onWait?.(wait, attempt, code);
@@ -54,7 +55,7 @@ export async function askAI(payload, { onWait } = {}) {
 export function errorMessage(err) {
   switch (err?.code) {
     case 'OFFLINE': return 'İnternet bağlantısı yok gibi görünüyor. Bağlantını kontrol edip tekrar dene.';
-    case 'TIMEOUT': return 'Cevap çok uzun sürdü. Lütfen tekrar dene.';
+    case 'TIMEOUT': return 'Cevap çok uzun sürdü. Yapay zekâ şu an yavaş olabilir. Biraz sonra tekrar dene.';
     case 'RATE_LIMIT': return 'Şu an çok fazla istek oldu. Bir dakika bekleyip tekrar dener misin?';
     case 'DAILY_LIMIT': return 'Bugünkü ücretsiz kullanım hakkı doldu. Yarın tekrar kullanabilirsin.';
     case 'OVERLOADED': return 'Yapay zekâ şu an çok yoğun. Biraz sonra tekrar dene.';
