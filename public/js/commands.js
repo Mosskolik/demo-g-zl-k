@@ -15,7 +15,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *   type: ready | misread | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -47,7 +47,11 @@ export function parseCommand(raw) {
   if (only('yardım', 'komutlar', 'ne diyebilirim', 'yardım et')) return { type: 'help' };
   if (only('devam', 'devam et', 'devam edebilirsin', 'sonraki', 'devam edin')) return { type: 'continue' };
 
-  // Evet / hayır (okunan metni onaylarken)
+  // "yanlış okudun", "yanlış okumuşsun, x küp olacak" → okumayı düzelt
+  const mis = t.match(/^(?:hayır )?(?:yanlış okudun|yanlış okumuşsun|yanlış anladın|öyle yazmıyor|yanlış)(?: olmuş)?\s*(.*)$/);
+  if (mis && /okudun|okumuşsun|anladın|yazmıyor/.test(t)) return { type: 'misread', arg: mis[1].trim() };
+
+  // Evet / hayır
   if (/^(evet|doğru|tamam|aynen|doğru anladın|evet doğru|olur)$/.test(t)) return { type: 'yes' };
   const no = t.match(/^(hayır|yanlış|değil|yanlış anladın|hayır yanlış)\s*(.*)$/);
   if (no) return { type: 'no', arg: no[2].trim() };
@@ -64,6 +68,7 @@ export const HELP_TEXT =
   'Hazırım: cevabını vermeye hazır olduğunu söyler; sonra cevabını söylersin, ben kontrol ederim. ' +
   'Ya da doğrudan cevabım deyip cevabını söyleyebilirsin. ' +
   'Evet ya da devam: konu anlatımında devam ederim. ' +
+  'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
   'Yeni soru: baştan başlar. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';

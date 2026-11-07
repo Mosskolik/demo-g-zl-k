@@ -22,12 +22,13 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 2. Sayfayı telefonun altına koy ve **ekrana dokun** ya da **"çek"** de. Fotoğraf çekilir.
    Fotoğraf karanlık veya bulanıksa asistan sesli uyarır ve fotoğrafı yapay zekâya göndermez.
    Prototipte ekranın **en altındaki "Galeriden görsel ekle"** butonuyla hazır bir görsel de seçebilirsin.
-3. Asistan okuduğunu sesli söyler ve **"Doğru anladım mı?"** diye sorar.
-   - **"Evet"** dersen devam eder.
-   - **"Hayır, … olacak"** dersen düzeltir.
+3. Öğrenci görme engelli olduğu için asistan **"doğru okudum mu?" diye sormaz**.
+   Emin olmadığı bir yer varsa bunu kendisi söyler, örneğin "İkinci satırdaki üssü net okuyamadım, gerekirse tekrar çek".
+   Bir öğretmen veya yardımcı yanlışlık fark ederse istediği an **"yanlış okudun, … olacak"** diyebilir.
 4. Sayfanın türüne göre:
-   - **Konu anlatımı sayfası:** Asistan konuyu adım adım anlatır ve ara ara "Devam edeyim mi?" diye sorar. **"Evet"** ya da **"devam"** de.
-   - **Soru sayfası:** Asistan soruyu **çözüm yolu veya ipucu vermeden** anlatır.
+   - **Konu anlatımı sayfası:** Asistan hemen konuyu adım adım anlatmaya başlar ve ara ara "Devam edeyim mi?" diye sorar.
+     Devam etmesi için **"evet"** ya da **"devam"** de, durması için **"hayır"** de.
+   - **Soru sayfası:** Asistan soruyu **çözüm yolu veya ipucu vermeden** okur ve "Senden istenen: …" diye ne istendiğini söyler.
      Öğrenci istediği kadar düşünür. Hazır olunca **"hazırım"** der ve ardından cevabını söyler.
      Doğruysa asistan tebrik eder. Yanlışsa cevabı söylemeden tekrar düşünmeye teşvik eder.
    - Öğrenci **"çözemedim"**, **"cevabı söyle"** ya da **"bilmiyorum"** derse asistan soruyu adım adım çözer ve cevabı açıklar.
@@ -43,6 +44,7 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **cevabım …** (ör. "cevabım beş") | Cevabı doğrudan kontrol eder. Doğruysa tebrik eder, yanlışsa cevabı söylemeden teşvik eder |
 | **çözemedim / cevabı söyle** | Soruyu adım adım çözer ve cevabı açıklar |
 | **evet / devam** | Konu anlatımına devam eder |
+| **yanlış okudun …** | Sayfayı yanlış okuduysa düzeltir (ör. "yanlış okudun, x küp olacak") |
 | **yeni soru** | Baştan başlar |
 | **dur** | Susar. Konuşurken ekrana dokunmak da susturur |
 | **yardım** | Komutları sesli sayar |
@@ -209,7 +211,7 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
 | "Yapay zekâ anahtarı eklenmemiş" | Vercel'de `GEMINI_API_KEY` ekle, sonra **Redeploy** yap (yukarıya bak). |
 | "Anahtar geçersiz" | Anahtarı [Google AI Studio](https://aistudio.google.com/apikey)'dan tekrar kopyala. Başında veya sonunda boşluk olmasın. |
 | "Çok fazla istek oldu, biraz bekle" | Ücretsiz katmanda dakikada az istek hakkı var. Uygulama kendisi bekleyip tekrar dener. |
-| "Bugünkü ücretsiz kullanım hakkı doldu" | Günlük kota doldu. Ertesi gün sıfırlanır. İstersen Vercel'de `GEMINI_MODEL` ile başka bir Flash modeli dene. |
+| "Bugünkü ücretsiz kullanım hakkı doldu" | Günlük kota doldu. Her gün Türkiye saatiyle yaklaşık 11:00'de (yaz aylarında 10:00'da) yenilenir. Dakikalık sınır ise 1 dakikada yenilenir. İstersen Vercel'de `GEMINI_MODEL` ile başka bir Flash modeli dene. |
 | Kamera açılmıyor | Link **https** ile mi açıldı? İzin verildi mi? Olmazsa galeriden yükle. |
 | Ses yok | Sessiz modu kapat ve sesi aç. Ekrana bir kez dokunmak gerekir (tarayıcı kuralı). |
 | Sesli komut çalışmıyor | Mikrofon iznini kontrol et. Ayarlar'da **Sürekli dinle** açık olsun. iPhone'da olmazsa butonları veya yazı kutusunu kullan. |

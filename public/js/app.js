@@ -3,7 +3,6 @@
 //
 // Aşamalar (phase):
 //   idle        → sayfa yok, fotoğraf bekleniyor
-//   confirm     → okunan metin söylendi, "Doğru anladım mı?" cevabı bekleniyor
 //   correcting  → öğrencinin düzeltmesi bekleniyor
 //   explain     → konu anlatımı sürüyor ("devam" bekleniyor)
 //   question    → soru anlatıldı; cevap, "çöz" veya serbest soru bekleniyor
@@ -196,10 +195,25 @@ async function handlePage(page) {
   }
   state.page = page;
   state.history = [];
-  state.phase = 'confirm';
-  const kind = page.tur === 'konu' ? 'Bu bir konu anlatımı.' : page.tur === 'soru' ? 'Bu bir soru.' : '';
-  const note = page.not ? ' Not: ' + page.not : '';
-  await reply(`${kind} Okuduğum metin şöyle: ${page.okunus}${note} Doğru anladım mı? Evet ya da hayır de.`);
+  // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
+  // Asistan emin olmadığı yerleri kendisi söyler; öğrenci veya yardımcısı isterse
+  // "yanlış okudun ..." diyerek düzeltebilir ya da yeniden çekebilir.
+  const note = page.not ? ` ${page.not} Gerekirse tekrar çek.` : '';
+
+  if (page.tur === 'konu') {
+    // Konu anlatımı sayfası → doğrudan konuyu anlatmaya başla
+    state.phase = 'explain';
+    await speaker.say(`Bu bir konu anlatımı sayfası.${note} Konuyu anlatıyorum.`, { remember: false });
+    return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
+  }
+
+  // Soru sayfası → okunuşta soru zaten ipucusuz anlatıldı; ek istek atmadan devam et
+  state.phase = 'question';
+  const text = `Bu bir soru.${note} ${page.okunus} ` +
+    'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
+    'Çözemezsen çözemedim de, birlikte çözeriz.';
+  state.history.push({ role: 'user', text: 'Soruyu bana anlat.' }, { role: 'model', text });
+  await reply(text);
 }
 
 // ---------- Yapay zekâya istek (bekleme sesleri ve hatalarla birlikte) ----------
@@ -252,15 +266,6 @@ async function correctPage(correction) {
   if (res) handlePage(res.page);
 }
 
-// Onaydan sonra moda göre başla
-function proceed() {
-  if (state.page?.tur === 'konu') {
-    state.phase = 'explain';
-    return talk('explain', 'Konuyu bana anlatmaya başla.');
-  }
-  state.phase = 'question';
-  return talk('question', 'Soruyu bana anlat.');
-}
 
 // ---------- Komutları işleme ----------
 /**
@@ -314,15 +319,19 @@ async function handleInput(raw, { voice = false } = {}) {
       return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.');
     case 'yes':
     case 'continue':
-      if (state.phase === 'confirm') return proceed();
       if (state.phase === 'explain') return talk('explain', 'Devam et.');
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       return talk('free', raw);
+    case 'misread':
+      // "yanlış okudun, x küp olacak" → düzelt; sadece "yanlış okudun" → düzeltmeyi sor
+      if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim.');
+      if (cmd.arg) return correctPage(cmd.arg);
+      state.phase = 'correcting';
+      return reply('Neyi yanlış okudum? Doğrusunu söyle. Ya da yeniden çekmek için ekrana dokun veya çek de.');
     case 'no':
-      if (state.phase === 'confirm') {
-        if (cmd.arg) return correctPage(cmd.arg);
-        state.phase = 'correcting';
-        return reply('Neyi yanlış okudum? Doğrusunu söyle. Ya da yeniden çekmek için ekrana dokun.');
+      if (state.phase === 'explain') {
+        state.phase = 'question';
+        return reply('Tamam, burada duruyorum. Sormak istediğin bir şey varsa sorabilirsin.');
       }
       return state.page ? talk('free', raw) : notice('Önce bir sayfanın fotoğrafını çekelim.');
     case 'solve':
@@ -342,7 +351,6 @@ async function handleInput(raw, { voice = false } = {}) {
       return talk('check', 'Öğrencinin cevabı: ' + cmd.arg);
     case 'free':
     default:
-      if (state.phase === 'confirm') state.phase = 'question'; // onay vermeden soru sordu
       return talk('free', cmd.arg || raw);
   }
 }
