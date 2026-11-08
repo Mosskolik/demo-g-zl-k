@@ -64,6 +64,8 @@ export default async function handler(req, res) {
       // Tam sayfa fotoğrafını okumak daha uzun sürebilir
       slow: mode === 'read' || mode === 'correct',
       preferFast: mode === 'question' || mode === 'free' || mode === 'explain',
+      // Sayfa okumada cevap geçerli JSON değilse (yarım kalmış) sıradaki modeli dene
+      validate: json ? isValidPage : null,
     });
 
     if (json) {
@@ -128,6 +130,13 @@ async function readJson(req) {
   const chunks = [];
   for await (const c of req) chunks.push(c);
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+}
+
+function isValidPage(t) {
+  try {
+    const p = JSON.parse(stripFence(t));
+    return Boolean(p && typeof p === 'object' && (Array.isArray(p.sorular) || typeof p.tur === 'string'));
+  } catch { return false; }
 }
 
 function stripFence(t) {
