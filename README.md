@@ -136,6 +136,18 @@ git push
 
 ---
 
+## 📶 Mobil veride açılmama sorunu ve Cloudflare adresi
+
+Bazı Türk mobil operatörleri `*.vercel.app` adreslerine bağlantıyı kesiyor. Telefonda `ERR_CONNECTION_RESET` hatası görülüyor; aynı adres Wi-Fi'da açılıyor.
+Bu yüzden uygulamanın asıl kullanılacak adresi şu:
+
+👉 **https://app.matematik-asistani.workers.dev**
+
+Bu adres bir Cloudflare Worker'dır (`cloudflare/worker.js`). Gelen her isteği olduğu gibi Vercel'deki uygulamaya iletir.
+Uygulamanın kodu ve yapay zekâ anahtarı yine Vercel'de durur; Cloudflare'de anahtar yoktur.
+
+**Worker'ı yeniden yüklemek için** (sadece `cloudflare/worker.js` değişirse): Cloudflare panelinde **Workers & Pages → app → Edit code**'a gir, dosyanın içeriğini yapıştır ve **Deploy**'a bas.
+
 ## 🚀 GitHub OLMADAN Vercel'e yükleme (Vercel CLI ile)
 
 GitHub hesabın kullanılamıyorsa kodu doğrudan Vercel'e yükleyebilirsin.

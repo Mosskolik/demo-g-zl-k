@@ -4,7 +4,7 @@ Bu rehberi **sırayla** uygula. Her adımda ne yapacağını ve ne duyman gerekt
 Bir adım beklediğim gibi çalışmazsa **durma**: adım numarasını ve olanı not al, sonraki adıma geç.
 Sonunda notlarını bana gönder.
 
-**Link:** https://matematik-asistani-eta.vercel.app
+**Link:** https://app.matematik-asistani.workers.dev (mobil veride de açılır)
 
 ---
 
@@ -15,7 +15,7 @@ Sonunda notlarını bana gönder.
 | 0.1 | Telefonun **sessiz modunu kapat**, sesi en az yarıya aç. | — |
 | 0.2 | Test için iki fotoğraf hazırla: **bir matematik sorusu** (şıklı olursa daha iyi) ve **bir konu anlatımı sayfası**. Kitaptan çekebilirsin. | — |
 | 0.3 | Sayfa telefonunda önceden açıksa **kapat ve yeniden aç**. Ya da sayfayı aşağı çekip **yenile**. Böylece en yeni sürüm yüklenir. | — |
-| 0.4 | Önce şu adresi aç: https://matematik-asistani-eta.vercel.app/api/health | `"apiKeyEklendi":true` yazmalı. |
+| 0.4 | Önce şu adresi aç: https://app.matematik-asistani.workers.dev/api/health | `"apiKeyEklendi":true` yazmalı. |
 
 > ⚠️ **Ücretsiz hak sınırı:** Bütün test yaklaşık 10–15 istek harcar. Testi bir kez baştan sona yap.
 > Aynı adımı defalarca tekrarlama.
