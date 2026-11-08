@@ -47,6 +47,9 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **yanlış okudun …** | Sayfayı yanlış okuduysa düzeltir (ör. "yanlış okudun, x küp olacak") |
 | **yeni soru** | Baştan başlar |
 | **dur** | Susar. Konuşurken ekrana dokunmak da susturur |
+| **sıradaki soru / önceki soru** | Sayfadaki sorular arasında gezer |
+| **yedinci soru** (sayfadaki numara) | O numaralı soruya gider |
+| **anlamadım** | Soruyu daha basit anlatır (ipucu vermeden) |
 | **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 

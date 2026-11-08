@@ -15,7 +15,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | misread | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *   type: ready | misread | nextq | prevq | gotoq | explainAgain | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -47,6 +47,19 @@ export function parseCommand(raw) {
   if (only('yardım', 'komutlar', 'ne diyebilirim', 'yardım et')) return { type: 'help' };
   if (only('devam', 'devam et', 'devam edebilirsin', 'sonraki', 'devam edin')) return { type: 'continue' };
 
+  // Sorular arasında gezinme
+  if (/^(sıradaki|sonraki|diğer|öbür|bir sonraki)( soru)?(ya|yu)?( geç| geçelim| oku)?$/.test(t) || /^(sıradaki|sonraki) soruya geç/.test(t)) return { type: 'nextq' };
+  if (/^(önceki|bir önceki)( soru)?(ya|yu)?( geç| dön| oku)?$/.test(t)) return { type: 'prevq' };
+  const nth = t.match(/^(birinci|ilk|ikinci|üçüncü|dördüncü|beşinci|altıncı|yedinci|sekizinci|dokuzuncu|onuncu|\d+)(?:\.)? soru(?:ya|yu)?(?: geç| oku| dön)?$/);
+  if (nth) {
+    const names = ['birinci', 'ikinci', 'üçüncü', 'dördüncü', 'beşinci', 'altıncı', 'yedinci', 'sekizinci', 'dokuzuncu', 'onuncu'];
+    const idx = nth[1] === 'ilk' ? 0 : /^\d+$/.test(nth[1]) ? Number(nth[1]) - 1 : names.indexOf(nth[1]);
+    return { type: 'gotoq', arg: idx };
+  }
+
+  // "anlamadım" → soruyu daha basit anlat (ipucusuz)
+  if (/^(anlamadım|anlayamadım|anlamadım tekrar anlat|daha basit anlat|basit anlat|tekrar anlat|açıkla|açıklar mısın|soruyu anlamadım|ne demek istiyor)$/.test(t)) return { type: 'explainAgain' };
+
   // "yanlış okudun", "yanlış okumuşsun, x küp olacak" → okumayı düzelt
   const mis = t.match(/^(?:hayır )?(?:yanlış okudun|yanlış okumuşsun|yanlış anladın|öyle yazmıyor|yanlış)(?: olmuş)?\s*(.*)$/);
   if (mis && /okudun|okumuşsun|anladın|yazmıyor/.test(t)) return { type: 'misread', arg: mis[1].trim() };
@@ -69,6 +82,8 @@ export const HELP_TEXT =
   'Ya da doğrudan cevabım deyip cevabını söyleyebilirsin. ' +
   'Evet ya da devam: konu anlatımında devam ederim. ' +
   'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
-  'Yeni soru: baştan başlar. ' +
+  'Sıradaki soru, önceki soru ya da üçüncü soru: sayfadaki sorular arasında gezersin. ' +
+  'Anlamadım: soruyu daha basit anlatırım. ' +
+  'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';

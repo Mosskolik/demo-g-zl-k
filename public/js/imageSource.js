@@ -6,7 +6,7 @@
 // Uygulamanın geri kalanı yalnızca capture() fonksiyonunu kullanır.
 // =============================================================
 
-const MAX_SIDE = 1280;     // gönderilen görüntünün en uzun kenarı (piksel)
+const MAX_SIDE = 2048;     // gönderilen görüntünün en uzun kenarı (tam sayfadaki küçük yazılar için yüksek)
 const JPEG_QUALITY = 0.85;
 
 /**

@@ -30,7 +30,9 @@ const el = {
 // ---------- Uygulama durumu ----------
 const state = {
   phase: 'idle',
-  page: null,       // { metin, okunus, tur, not }
+  page: null,       // okunan sayfa (bkz. READ_SCHEMA)
+  questions: [],    // tam görünen sorular (sırayla sorulur)
+  qIndex: 0,        // şu anki soru
   history: [],      // [{role, text}] — sayfa hakkındaki konuşma
   busy: false,      // modelden cevap bekleniyor mu?
 };
@@ -207,33 +209,96 @@ async function processImage({ canvas, base64 }, { strict }) {
 }
 
 /** Model sayfayı okuduktan sonra */
-async function handlePage(page) {
+const ORDINALS = ['Birinci', 'İkinci', 'Üçüncü', 'Dördüncü', 'Beşinci', 'Altıncı', 'Yedinci', 'Sekizinci', 'Dokuzuncu', 'Onuncu',
+  'On birinci', 'On ikinci', 'On üçüncü', 'On dördüncü', 'On beşinci'];
+const ordinal = (i) => ORDINALS[i] || `${i + 1}.`;
+// Okunuşun başındaki "Beşinci soru." / "Soru 5:" / "Soru beş." / "5. soru" kalıbı (uygulama numarayı kendisi söyler)
+const NUMWORD = '(?:\\d+\\.?|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on(?: \\S+)?|yirmi(?: \\S+)?|otuz(?: \\S+)?)';
+const ORDWORD = '(?:\\S*(?:inci|ıncı|uncu|üncü|nci|ncı|ncu|ncü)|ilk)';
+const LEADING_NO = new RegExp(`^\\s*(?:soru\\s+${NUMWORD}|${ORDWORD}\\s+soru|\\d+\\.?\\s+soru)\\s*[.:,]?\\s*`, 'i');
+const CLOSING = 'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
+  'Anlamadığın yer olursa anlamadım de. Çözemezsen çözemedim de, birlikte çözeriz.';
+
+/**
+ * Model sayfayı okuduktan sonra.
+ * @param {object} page  okunan sayfa (bkz. lib/prompts.js READ_SCHEMA)
+ * @param {{keepIndex?:boolean}} opts  düzeltmeden sonra aynı soruda kal
+ */
+async function handlePage(page, { keepIndex = false } = {}) {
   if (!page || page.okunabilir === false) {
     state.phase = state.page ? state.phase : 'idle';
-    await reply((page?.not || 'Sayfayı okuyamadım.') + ' Lütfen tekrar çek.');
+    const guide = page?.yonlendirme || page?.not || 'Sayfayı okuyamadım.';
+    await reply(guide + ' Sonra tekrar dokun ya da çek de.');
     return;
   }
-  state.page = page;
-  state.history = [];
+
   // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
-  // Asistan emin olmadığı yerleri kendisi söyler; öğrenci veya yardımcısı isterse
-  // "yanlış okudun ..." diyerek düzeltebilir ya da yeniden çekebilir.
-  const note = page.not ? ` ${page.not} Gerekirse tekrar çek.` : '';
+  // Asistan emin olmadığı yerleri ve kesik kısımları kendisi söyler.
+  const note = page.not ? ` ${page.not}` : '';
+  const cut = page.kesik ? ` ${page.yonlendirme || 'Sayfanın bir kısmı fotoğrafın dışında kalmış.'}` : '';
 
   if (page.tur === 'konu') {
-    // Konu anlatımı sayfası → doğrudan konuyu anlatmaya başla
+    state.page = page; state.questions = []; state.history = [];
+    if (page.kesik) {
+      // Kesik konu sayfası: önce yönlendir; öğrenci isterse görünen kısmı anlat
+      state.phase = 'explainOffer';
+      return reply(`Bu bir konu anlatımı sayfası, ama sayfanın bir kısmı görünmüyor.${cut} ` +
+        'Tekrar çekmek için ekrana dokun ya da çek de. Görünen kısmı anlatmamı istersen devam de.');
+    }
     state.phase = 'explain';
     await speaker.say(`Bu bir konu anlatımı sayfası.${note} Konuyu anlatıyorum.`, { remember: false });
     return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
   }
 
-  // Soru sayfası → okunuşta soru zaten ipucusuz anlatıldı; ek istek atmadan devam et
+  // Soru sayfası: tam görünen soruları sırayla sor
+  let all = Array.isArray(page.sorular) ? page.sorular.filter((q) => q && q.okunus) : [];
+  if (!all.length && page.okunus) all = [{ no: '1', tam: !page.kesik, metin: page.metin, okunus: page.okunus }];
+  const full = all.filter((q) => q.tam !== false);
+
+  if (!full.length) {
+    state.phase = state.page ? state.phase : 'idle';
+    return reply(`Soruyu tam göremiyorum.${cut || ' Sayfanın bir kısmı kesik.'} Sonra tekrar dokun ya da çek de.`);
+  }
+
+  const prevIndex = state.qIndex;
+  state.page = page;
+  state.questions = full;
+  let intro = full.length > 1 ? `Bu sayfada ${full.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
+  if (all.length > full.length) intro += ` ${all.length - full.length} soru kesik olduğu için okuyamadım.${cut} İstersen sonra tekrar çekebilirsin.`;
+  else if (page.kesik) intro += cut;
+  if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
+  return presentQuestion(keepIndex ? Math.min(prevIndex, full.length - 1) : 0, intro + note);
+}
+
+/** Sıradaki/istenen soruyu öğrenciye anlatır (ek istek atmaz; okunuş sayfa okumada hazırlandı) */
+async function presentQuestion(i, prefix = '') {
+  const q = state.questions[i];
+  if (!q) return;
+  state.qIndex = i;
   state.phase = 'question';
-  const text = `Bu bir soru.${note} ${page.okunus} ` +
-    'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
-    'Çözemezsen çözemedim de, birlikte çözeriz.';
-  state.history.push({ role: 'user', text: 'Soruyu bana anlat.' }, { role: 'model', text });
-  await reply(text);
+  state.history = [];
+  // Sayfadaki gerçek numarayı söyle ("Soru 7"); model okunuşa numara eklediyse onu sil (tekrar olmasın)
+  let head = q.no ? `Soru ${q.no}. ` : (state.questions.length > 1 ? `${ordinal(i)} soru. ` : '');
+  // Öğrenci hangi konuda olduğunu bilsin: "Bu soru ... ünitesinden, ... konusuyla ilgili."
+  if (q.unite) head += `Bu soru ${q.unite} ünitesinden${q.konu ? `, ${q.konu} konusuyla ilgili` : ''}. `;
+  const body = String(q.okunus).replace(LEADING_NO, '');
+  const text = `${prefix ? prefix + ' ' : ''}${head}${body} ${CLOSING}`;
+  state.history.push({ role: 'user', text: 'Soruyu bana anlat.' }, { role: 'model', text: q.okunus });
+  await reply(text.trim());
+}
+
+/** Modele gönderilecek bağlam: konu sayfasında tüm metin, soru sayfasında ortak bilgi + o anki soru */
+function currentContext() {
+  const p = state.page;
+  if (!p) return '';
+  const q = state.questions?.[state.qIndex];
+  if (!q) return p.metin || '';
+  return (p.ortakBilgi ? `Ortak bilgi: ${p.ortakBilgi}\n` : '') +
+    (q.unite ? `Ünite: ${q.unite}${q.konu ? ` (konu: ${q.konu})` : ''}\n` : '') + `Soru ${q.no}: ${q.metin}`;
+}
+
+function moreQuestions() {
+  return state.questions && state.qIndex < state.questions.length - 1;
 }
 
 // ---------- Yapay zekâya istek (bekleme sesleri ve hatalarla birlikte) ----------
@@ -273,17 +338,22 @@ async function talk(mode, message) {
   const res = await callAI({
     mode,
     message,
-    pageText: state.page?.metin || '',
+    pageText: currentContext(),
     history: state.history,
   });
   if (!res) return;
   state.history.push({ role: 'user', text: message }, { role: 'model', text: res.reply });
-  await reply(res.reply);
+  let text = res.reply;
+  // Doğru cevaptan veya çözümden sonra, sayfada başka soru varsa nasıl geçileceğini söyle
+  const correct = mode === 'check' && /tebrik|doğru(?!\s*değil)|harika|aferin/i.test(text) && !/doğru değil|yanlış/i.test(text);
+  if ((correct || mode === 'solve') && moreQuestions()) text += ' Sıradaki soruya geçmek için sıradaki soru de.';
+  else if ((correct || mode === 'solve') && state.questions?.length > 1) text += ' Bu sayfadaki son soruydu. Yeni sayfa için yeni soru de.';
+  await reply(text);
 }
 
 async function correctPage(correction) {
   const res = await callAI({ mode: 'correct', pageText: state.page?.metin || '', message: 'Öğrencinin düzeltmesi: ' + correction });
-  if (res) handlePage(res.page);
+  if (res) handlePage(res.page, { keepIndex: true });
 }
 
 
@@ -335,14 +405,44 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'help':
       return reply(HELP_TEXT);
     case 'newq':
-      state.page = null; state.history = []; state.phase = 'idle';
+      state.page = null; state.history = []; state.questions = []; state.qIndex = 0; state.phase = 'idle';
       el.reply.textContent = '';
       return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.');
     case 'yes':
     case 'continue':
+      if (state.phase === 'explainOffer') {
+        state.phase = 'explain';
+        return talk('explain', 'Bu sayfanın görünen kısmındaki konuyu bana anlatmaya başla.');
+      }
       if (state.phase === 'explain') return talk('explain', 'Devam et.');
+      // Soru sayfasında "sonraki/devam" → sıradaki soru
+      if (cmd.type === 'continue' && state.phase === 'question' && moreQuestions()) return presentQuestion(state.qIndex + 1);
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       return talk('free', raw);
+    case 'nextq':
+      if (!state.questions?.length) return notice('Şu an soru yok. Bir soru sayfasının fotoğrafını çek.');
+      if (!moreQuestions()) return reply('Bu sayfadaki son sorudaydık. Yeni sayfa için yeni soru de.');
+      return presentQuestion(state.qIndex + 1);
+    case 'prevq':
+      if (!state.questions?.length) return notice('Şu an soru yok.');
+      if (state.qIndex === 0) return reply('Zaten ilk sorudayız.');
+      return presentQuestion(state.qIndex - 1);
+    case 'gotoq': {
+      if (!state.questions?.length) return notice('Şu an soru yok.');
+      const n = state.questions.length;
+      // Önce sayfadaki numaraya bak ("yedinci soru" → 7 numaralı soru), yoksa sıraya
+      const byNo = state.questions.findIndex((q) => Number(q.no) === cmd.arg + 1);
+      if (byNo >= 0) return presentQuestion(byNo);
+      if (cmd.arg < 0 || cmd.arg >= n) {
+        const nos = state.questions.map((q) => q.no).filter(Boolean).join(', ');
+        return reply(`Bu sayfadaki sorular: ${nos || n + ' soru'}. Bunlardan birini söyle.`);
+      }
+      return presentQuestion(cmd.arg);
+    }
+    case 'explainAgain':
+      if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
+      if (state.phase === 'awaitAnswer') state.phase = 'question';
+      return talk('free', 'Soruyu anlamadım. Bana daha basit ve daha yavaş anlatır mısın? Ama ipucu verme, çözüm yolu söyleme.');
     case 'misread':
       // "yanlış okudun, x küp olacak" → düzelt; sadece "yanlış okudun" → düzeltmeyi sor
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim.');

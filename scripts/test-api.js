@@ -14,10 +14,12 @@ const cases = [
   ['Çek', 'capture'], ['fotoğraf çek', 'capture'], ['Tekrar et', 'repeat'], ['yavaş oku', 'slow'],
   ['Çöz', 'solve'], ['çözer misin', 'solve'], ['Cevabım 5', 'answer'], ['yeni soru', 'newq'],
   ['Dur!', 'stop'], ['evet', 'yes'], ['hayır x küp olacak', 'no'], ['devam et', 'continue'],
-  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['Çekirdek nedir', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
+  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['sıradaki soru', 'nextq'], ['sonraki soru', 'nextq'], ['sıradaki', 'nextq'], ['önceki soru', 'prevq'], ['üçüncü soru', 'gotoq'], ['2. soru', 'gotoq'], ['anlamadım', 'explainAgain'], ['Çekirdek nedir', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
 ];
 for (const [text, type] of cases) assert.equal(parseCommand(text).type, type, `"${text}" → ${type}`);
 assert.equal(parseCommand('cevabım B şıkkı').arg, 'b şıkkı');
+assert.equal(parseCommand('üçüncü soru').arg, 2);
+assert.equal(parseCommand('2. soru').arg, 1);
 console.log(`✓ ${cases.length} komut doğru tanındı`);
 
 // --- API (sahte istek/cevap ile) ---
@@ -31,7 +33,7 @@ async function call(body) {
 }
 
 let r = await call({ mode: 'read', image: 'aGVsbG8=' });
-assert.equal(r.status, 200); assert.equal(r.data.page.tur, 'soru');
+assert.equal(r.status, 200); assert.equal(r.data.page.tur, 'soru'); assert.equal(r.data.page.sorular.length, 3);
 console.log('✓ read modu');
 
 r = await call({ mode: 'check', pageText: 'x^2-5x+6=0', message: 'Öğrencinin cevabı: 5' });

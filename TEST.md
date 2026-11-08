@@ -57,6 +57,25 @@ Sonra sayfayı yenile.
 
 ---
 
+## 2B. Tam sayfa (birden fazla soru)
+
+| # | Yap | Duyman gereken |
+|---|---|---|
+| 2B.1 | **"yeni soru"** de. Birkaç sorunun olduğu **tam bir test sayfasının** fotoğrafını seç ya da çek. | "Bu sayfada 4 soru var. Sırayla gideceğiz." → "Soru 5. Bu soru Sayılar ve Cebir ünitesinden, … konusuyla ilgili." Numara, sayfadaki gerçek soru numarası olmalı. |
+| 2B.2 | Dinle. | Soruyu okumalı, sonra **"Bu soruyu sana açıklayayım"** deyip açıklamalı. Ardından "Verilenler şunlar…" ve "Senden istenen…" demeli. **Çözüm yolu veya ipucu vermemeli.** |
+| 2B.3 | **"anlamadım"** de. | Soruyu daha basit anlatmalı. İpucu vermemeli. |
+| 2B.4 | **"sıradaki soru"** de. | Bir sonraki soruya geçmeli. |
+| 2B.5 | **"önceki soru"** de. | Önceki soruya dönmeli. |
+| 2B.6 | Sayfadaki bir soru numarasını söyle. Örneğin **"yedinci soru"**. | O numaralı soruya gitmeli. |
+| 2B.7 | **"hazırım"** de ve doğru cevabı söyle. | Tebrik etmeli. Sonra "Sıradaki soruya geçmek için sıradaki soru de" demeli. |
+| 2B.8 | Bir soruda **"çözemedim"** de. | Çözüme başlarken sorunun hangi üniteden olduğunu söylemeli, sonra adım adım çözmeli. |
+
+## 2C. Kesik fotoğraf
+
+| # | Yap | Duyman gereken |
+|---|---|---|
+| 2C.1 | **"yeni soru"** de. Sayfanın **alt kısmı görünmeyecek** şekilde fotoğraf çek (ya da öyle bir fotoğraf seç). | Kesik olan soruyu söylemeli. "Telefonu biraz sayfanın alt tarafına doğru kaydır" gibi **net bir yön** vermeli. Tam görünen sorularla devam etmeli. |
+
 ## 3. Konu anlatımı sayfası
 
 | # | Yap | Duyman gereken |
