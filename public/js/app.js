@@ -298,7 +298,8 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   state.page = page;
   state.questions = all;
   let intro = all.length > 1 ? `Bu sayfada ${all.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
-  if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
+  if (keepIndex) intro = 'Düzelttim.'; // düzeltmeden sonra sayfaya baştan başlama
+  else if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
   return presentQuestion(keepIndex ? Math.min(prevIndex, all.length - 1) : 0, intro + note);
 }
 
@@ -539,6 +540,7 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'gotoq': {
       if (!state.questions?.length) return notice('Şu an soru yok.');
       const n = state.questions.length;
+      if (cmd.arg === -2) return presentQuestion(n - 1); // "son soru"
       // Önce sayfadaki numaraya bak ("yedinci soru" → 7 numaralı soru), yoksa sıraya
       const byNo = state.questions.findIndex((q) => Number(q.no) === cmd.arg + 1);
       if (byNo >= 0) return presentQuestion(byNo);

@@ -14,12 +14,17 @@ const cases = [
   ['Çek', 'capture'], ['fotoğraf çek', 'capture'], ['Tekrar et', 'repeat'], ['yavaş oku', 'slow'],
   ['Çöz', 'solve'], ['çözer misin', 'solve'], ['Cevabım 5', 'answer'], ['yeni soru', 'newq'],
   ['Dur!', 'stop'], ['evet', 'yes'], ['hayır x küp olacak', 'no'], ['devam et', 'continue'],
-  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['sıradaki soru', 'nextq'], ['sonraki soru', 'nextq'], ['sıradaki', 'nextq'], ['önceki soru', 'prevq'], ['üçüncü soru', 'gotoq'], ['2. soru', 'gotoq'], ['anlamadım', 'explainAgain'], ['Çekirdek nedir', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
+  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['sıradaki soru', 'nextq'], ['sonraki soru', 'nextq'], ['sıradaki', 'nextq'], ['önceki soru', 'prevq'], ['üçüncü soru', 'gotoq'], ['2. soru', 'gotoq'], ['anlamadım', 'explainAgain'], ['on ikinci soru', 'gotoq'], ['yirmi birinci soru', 'gotoq'], ['soru on iki', 'gotoq'], ['ilk soru', 'gotoq'], ['son soru', 'gotoq'], ['Çekirdek nedir', 'free'], ['bu soru zor', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
 ];
 for (const [text, type] of cases) assert.equal(parseCommand(text).type, type, `"${text}" → ${type}`);
 assert.equal(parseCommand('cevabım B şıkkı').arg, 'b şıkkı');
 assert.equal(parseCommand('üçüncü soru').arg, 2);
 assert.equal(parseCommand('2. soru').arg, 1);
+assert.equal(parseCommand('on ikinci soru').arg, 11);
+assert.equal(parseCommand('yirmi birinci soru').arg, 20);
+assert.equal(parseCommand('soru on iki').arg, 11);
+assert.equal(parseCommand('son soru').arg, -2);
+assert.equal(parseCommand('onuncu soru').arg, 9);
 console.log(`✓ ${cases.length} komut doğru tanındı`);
 
 // --- API (sahte istek/cevap ile) ---

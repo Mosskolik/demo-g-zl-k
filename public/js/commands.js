@@ -3,6 +3,27 @@
 // Tanınmayan her şey "serbest soru" olarak modele gönderilir.
 // =============================================================
 
+// Türkçe sayı ve sıra sayısı → rakam ("on ikinci" → 12, "yirmi bir" → 21, "7" → 7, "ilk" → 1)
+const UNITS = { bir: 1, iki: 2, üç: 3, dört: 4, beş: 5, altı: 6, yedi: 7, sekiz: 8, dokuz: 9 };
+const TENS = { on: 10, yirmi: 20, otuz: 30, kırk: 40, elli: 50 };
+const ORD_UNITS = { birinci: 1, ikinci: 2, üçüncü: 3, dördüncü: 4, beşinci: 5, altıncı: 6, yedinci: 7, sekizinci: 8, dokuzuncu: 9 };
+const ORD_TENS = { onuncu: 10, yirminci: 20, otuzuncu: 30, kırkıncı: 40, ellinci: 50 };
+export function turkishNumber(text) {
+  const w = String(text).trim().split(/\s+/);
+  if (w.length === 1 && /^\d+$/.test(w[0])) return Number(w[0]);
+  if (w.length === 1 && w[0] === 'ilk') return 1;
+  let total = 0;
+  for (let i = 0; i < w.length; i++) {
+    const x = w[i];
+    if (x in TENS && i === 0) total += TENS[x];
+    else if (x in ORD_TENS && i === 0 && w.length === 1) total += ORD_TENS[x];
+    else if (x in UNITS && i === w.length - 1) total += UNITS[x];
+    else if (x in ORD_UNITS && i === w.length - 1) total += ORD_UNITS[x];
+    else return 0;
+  }
+  return total;
+}
+
 /** Türkçe küçük harfe çevirir, noktalama işaretlerini atar */
 export function normalize(text) {
   return String(text)
@@ -55,11 +76,12 @@ export function parseCommand(raw) {
   // Sorular arasında gezinme
   if (/^(sıradaki|sonraki|diğer|öbür|bir sonraki)( soru)?(ya|yu)?( geç| geçelim| oku)?$/.test(t) || /^(sıradaki|sonraki) soruya geç/.test(t)) return { type: 'nextq' };
   if (/^(önceki|bir önceki)( soru)?(ya|yu)?( geç| dön| oku)?$/.test(t)) return { type: 'prevq' };
-  const nth = t.match(/^(birinci|ilk|ikinci|üçüncü|dördüncü|beşinci|altıncı|yedinci|sekizinci|dokuzuncu|onuncu|\d+)(?:\.)? soru(?:ya|yu)?(?: geç| oku| dön)?$/);
+  // "yedinci soru", "on ikinci soru", "12. soru", "soru on iki", "ilk soru", "son soru"
+  const nth = t.match(/^(.+?) soru(?:ya|yu)?(?: geç| oku| dön)?$/) || t.match(/^soru (.+?)(?:ya|ye|yı|yi| geç)?$/);
   if (nth) {
-    const names = ['birinci', 'ikinci', 'üçüncü', 'dördüncü', 'beşinci', 'altıncı', 'yedinci', 'sekizinci', 'dokuzuncu', 'onuncu'];
-    const idx = nth[1] === 'ilk' ? 0 : /^\d+$/.test(nth[1]) ? Number(nth[1]) - 1 : names.indexOf(nth[1]);
-    return { type: 'gotoq', arg: idx };
+    if (nth[1] === 'son') return { type: 'gotoq', arg: -2 }; // -2 = son soru
+    const n = turkishNumber(nth[1]);
+    if (n) return { type: 'gotoq', arg: n - 1 };
   }
 
   // "anlamadım" → soruyu daha basit anlat (ipucusuz)
