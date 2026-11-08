@@ -60,3 +60,57 @@ export const QUALITY_MESSAGES = {
   bright: 'Görüntü çok parlak, yansıma olabilir. Telefonu biraz eğ ve tekrar dene.',
   blur: 'Görüntü bulanık. Telefonu sayfanın yaklaşık otuz santim üstünde sabit tut ve tekrar dokun.',
 };
+
+/**
+ * KESİK KENAR TESPİTİ (piksel ile, internete istek atmadan).
+ * Fikir: Fotoğrafın en dış şeridinde zemin AÇIK renkliyse (kâğıt) ve bu şeritte
+ * birbirinden ayrı birkaç koyu "mürekkep" lekesi varsa, yazı o kenardan taşmış (kesilmiş) demektir.
+ * Şerit koyuysa (masa, zemin) kâğıdın kenarı görünüyor demektir → kesik değil.
+ * @param {HTMLCanvasElement} canvas
+ * @returns {string[]} kesik görünen kenarlar: 'ust' | 'alt' | 'sol' | 'sag'
+ */
+export function detectCutEdges(canvas) {
+  const W = 640;
+  const scale = W / canvas.width;
+  const H = Math.max(1, Math.round(canvas.height * scale));
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(canvas, 0, 0, W, H);
+  const { data } = ctx.getImageData(0, 0, W, H);
+  const lum = (x, y) => { const i = (y * W + x) * 4; return 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]; };
+
+  // side: hangi kenar; along: kenar boyunca uzunluk; depth: şerit kalınlığı
+  const sides = [];
+  const check = (name, along, depth, px) => {
+    const vals = [];
+    for (let a = 0; a < along; a++) for (let d = 0; d < depth; d++) vals.push(px(a, d));
+    vals.sort((p, q) => p - q);
+    const median = vals[Math.floor(vals.length / 2)];
+    if (median < 150) return; // zemin koyu: kâğıdın kenarı görünüyor → kesik değil
+    const inkLimit = median - 90;
+    // Kenar boyunca her konumda şeritte mürekkep var mı?
+    const marks = [];
+    for (let a = 0; a < along; a++) {
+      let ink = false;
+      for (let d = 0; d < depth && !ink; d++) if (px(a, d) < inkLimit) ink = true;
+      marks.push(ink);
+    }
+    // Ayrı mürekkep kümelerini say (harf/satır boyutunda olanlar; büyük gölgeler sayılmaz)
+    let clusters = 0, run = 0;
+    const maxRun = Math.max(6, Math.round(along * 0.08));
+    for (let a = 0; a <= along; a++) {
+      if (a < along && marks[a]) { run++; continue; }
+      if (run >= 1 && run <= maxRun) clusters++;
+      run = 0;
+    }
+    if (clusters >= 3) sides.push(name);
+  };
+  const dx = Math.max(3, Math.round(W * 0.012));
+  const dy = Math.max(3, Math.round(H * 0.012));
+  check('sol', H, dx, (a, d) => lum(d, a));
+  check('sag', H, dx, (a, d) => lum(W - 1 - d, a));
+  check('ust', W, dy, (a, d) => lum(a, d));
+  check('alt', W, dy, (a, d) => lum(a, H - 1 - d));
+  return sides;
+}

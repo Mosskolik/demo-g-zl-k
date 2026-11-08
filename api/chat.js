@@ -60,9 +60,10 @@ export default async function handler(req, res) {
       image: mode === 'read' ? { mimeType: 'image/jpeg', data: image } : undefined,
       jsonSchema: json ? READ_SCHEMA : undefined,
       // Cevap kontrolü ve çözümde model önce düşünsün (daha doğru); okumada hızlı olsun
-      thinking: mode === 'check' || mode === 'solve',
+      thinking: mode === 'check' || mode === 'solve' ? 'hard' : (mode === 'read' ? 'light' : false),
       // Tam sayfa fotoğrafını okumak daha uzun sürebilir
       slow: mode === 'read' || mode === 'correct',
+      preferFast: mode === 'question' || mode === 'free' || mode === 'explain',
     });
 
     if (json) {
@@ -76,7 +77,13 @@ export default async function handler(req, res) {
       }
       page.okunus = fixSpoken(page.okunus);
       page.ortakOkunus = fixSpoken(page.ortakOkunus);
-      if (Array.isArray(page.sorular)) page.sorular.forEach((q) => { q.okunus = fixSpoken(q.okunus); });
+      if (Array.isArray(page.sorular)) {
+        page.sorular.forEach((q) => {
+          q.okunus = fixSpoken(q.okunus);
+          // Güvenlik ağı: konu adı çözüm yöntemini ima ediyorsa (ör. "Pisagor bağıntısı") söyleme
+          if (HINTY.test(q.konu || '')) q.konu = '';
+        });
+      }
       return send(res, 200, { page, model: result.model });
     }
     return send(res, 200, { reply: fixSpoken(result.text.trim()), model: result.model });
@@ -95,6 +102,8 @@ const EN_NUM = { zero: 'sıfır', one: 'bir', two: 'iki', three: 'üç', four: '
   eight: 'sekiz', nine: 'dokuz', ten: 'on', eleven: 'on bir', twelve: 'on iki', thirteen: 'on üç', fourteen: 'on dört',
   fifteen: 'on beş', sixteen: 'on altı', seventeen: 'on yedi', eighteen: 'on sekiz', nineteen: 'on dokuz', twenty: 'yirmi' };
 const EN_RE = new RegExp(`\\b(${Object.keys(EN_NUM).join('|')})\\b`, 'gi');
+// Konu adında çözüm yöntemi ima eden kelimeler (ipucu sayılır)
+const HINTY = /pisagor|öklid|teorem|bağıntı|formül|kural|yöntem|özdeşli|kökler (toplamı|çarpımı)|tales|sinüs|kosinüs|çarpanlara ayır/i;
 function fixSpoken(t) {
   return typeof t === 'string' ? t.replace(EN_RE, (w) => EN_NUM[w.toLowerCase()]) : t;
 }

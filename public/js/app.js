@@ -11,7 +11,7 @@
 import { speaker, listener } from './speech.js';
 import { fb, unlockAudio, startThinkingTicks } from './feedback.js';
 import { CameraSource, FileSource } from './imageSource.js';
-import { checkQuality, QUALITY_MESSAGES } from './quality.js';
+import { checkQuality, detectCutEdges, QUALITY_MESSAGES } from './quality.js';
 import { parseCommand, normalize, HELP_TEXT } from './commands.js';
 import { askAI, errorMessage } from './api.js';
 import { diag } from './diag.js';
@@ -204,9 +204,13 @@ async function processImage({ canvas, base64 }, { strict }) {
     return;
   }
 
+  // Yapay zekâdan bağımsız ikinci kontrol: kenarlarda yarım kalmış yazı var mı?
+  const pixelCut = detectCutEdges(canvas);
   fb.shutter();
   const res = await callAI({ mode: 'read', image: base64 }, 'Fotoğraf çekildi. Sayfayı okuyorum, biraz bekle.');
   if (!res) return;
+  if (res.page) res.page.pikselKesik = pixelCut;
+  diag('kenar-kontrol', { piksel: pixelCut.join(',') || '-', model: (res.page?.kesikKenarlar || []).join(',') || '-' });
   handlePage(res.page);
 }
 
@@ -249,7 +253,7 @@ function guidanceFor(sides = []) {
  * @param {object} page  okunan sayfa (bkz. lib/prompts.js READ_SCHEMA)
  * @param {{keepIndex?:boolean}} opts  düzeltmeden sonra aynı soruda kal
  */
-async function handlePage(page, { keepIndex = false } = {}) {
+async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   if (!page || page.okunabilir === false) {
     state.phase = state.page ? state.phase : 'idle';
     const guide = page?.kesikKenarlar?.length ? guidanceFor(page.kesikKenarlar) : (page?.not || 'Sayfayı okuyamadım.');
@@ -259,12 +263,16 @@ async function handlePage(page, { keepIndex = false } = {}) {
 
   // ÇOK ÖNEMLİ: Sayfa tam görünmüyorsa görünen kısımla HİÇBİR ŞEY yapma (okuma, çözme, anlatma).
   // Sadece telefonun nasıl kaydırılacağını söyle ve yeni fotoğrafı bekle.
+  // Kesik kenarlar: yapay zekânın söyledikleri + telefonun piksel kontrolünün bulduğu
+  const cutSides = [...new Set([...(page.kesikKenarlar || []), ...(page.pikselKesik || [])])];
   const someCut = Array.isArray(page.sorular) && page.sorular.some((q) => q && q.tam === false);
-  if (page.kesik || page.kesikKenarlar?.length || someCut) {
+  if (!ignoreCut && (page.kesik || cutSides.length || someCut)) {
     state.phase = state.page ? state.phase : 'idle';
-    diag('kesik', { kenarlar: (page.kesikKenarlar || []).join(',') || '-', kesikSoru: someCut });
-    return reply(`Sayfanın tamamı görünmüyor. ${guidanceFor(page.kesikKenarlar)} Sonra tekrar dokun ya da çek de.`);
+    state.lastCutPage = page; // öğrenci "yine de devam" derse sadece tam soruları okumak için
+    diag('kesik', { kenarlar: cutSides.join(',') || '-', kesikSoru: someCut });
+    return reply(`Sayfanın tamamı görünmüyor. ${guidanceFor(cutSides)} Sonra tekrar dokun ya da çek de.`);
   }
+  state.lastCutPage = null;
 
   // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
   // Asistan emin olmadığı yerleri kendisi söyler.
@@ -277,8 +285,8 @@ async function handlePage(page, { keepIndex = false } = {}) {
     return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
   }
 
-  // Soru sayfası: soruları sırayla sor
-  let all = Array.isArray(page.sorular) ? page.sorular.filter((q) => q && q.okunus) : [];
+  // Soru sayfası: soruları sırayla sor (yarım/kesik sorular ASLA okunmaz)
+  let all = Array.isArray(page.sorular) ? page.sorular.filter((q) => q && q.okunus && q.tam !== false) : [];
   if (!all.length && page.okunus) all = [{ no: '1', tam: true, metin: page.metin, okunus: page.okunus }];
   if (!all.length) {
     state.phase = state.page ? state.phase : 'idle';
@@ -513,6 +521,11 @@ async function handleInput(raw, { voice = false } = {}) {
       if (cmd.type === 'continue' && state.phase === 'question' && moreQuestions()) return presentQuestion(state.qIndex + 1);
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       return talk('free', raw);
+    case 'forceContinue':
+      // Kesik uyarısından sonra öğrenci isterse: SADECE tam görünen soruları oku
+      if (!state.lastCutPage) return notice('Şu an devam edilecek bir sayfa yok.');
+      await speaker.say('Tamam. Sadece tam görünen soruları okuyorum. Kenara yakın sorularda okuma hatası olabilir.', { remember: false });
+      return handlePage(state.lastCutPage, { ignoreCut: true });
     case 'nextq':
       if (!state.questions?.length) return notice('Şu an soru yok. Bir soru sayfasının fotoğrafını çek.');
       if (!moreQuestions()) return reply('Bu sayfadaki son sorudaydık. Yeni sayfa için yeni soru de.');

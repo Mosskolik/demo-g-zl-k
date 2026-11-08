@@ -15,7 +15,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | misread | nextq | prevq | gotoq | explainAgain | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -48,6 +48,9 @@ export function parseCommand(raw) {
   if (only('yeni soru', 'yeni', 'başka soru', 'yeni sayfa', 'baştan başla', 'sıfırla')) return { type: 'newq' };
   if (only('yardım', 'komutlar', 'ne diyebilirim', 'yardım et')) return { type: 'help' };
   if (only('devam', 'devam et', 'devam edebilirsin', 'sonraki', 'devam edin')) return { type: 'continue' };
+
+  // Kesik uyarısına rağmen devam (sadece tam görünen sorular okunur)
+  if (/^(yine de devam( et)?|devam et yine de|yine de oku|olsun devam( et)?)$/.test(t)) return { type: 'forceContinue' };
 
   // Sorular arasında gezinme
   if (/^(sıradaki|sonraki|diğer|öbür|bir sonraki)( soru)?(ya|yu)?( geç| geçelim| oku)?$/.test(t) || /^(sıradaki|sonraki) soruya geç/.test(t)) return { type: 'nextq' };
@@ -86,6 +89,7 @@ export const HELP_TEXT =
   'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
   'Sıradaki soru, önceki soru ya da üçüncü soru: sayfadaki sorular arasında gezersin. ' +
   'Anlamadım: soruyu daha basit anlatırım. ' +
+  'Yine de devam: sayfa kesik dediğimde, sadece tam görünen soruları okurum. ' +
   'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';
