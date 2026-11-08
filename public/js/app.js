@@ -33,7 +33,8 @@ const state = {
   page: null,       // okunan sayfa (bkz. READ_SCHEMA)
   questions: [],    // tam görünen sorular (sırayla sorulur)
   qIndex: 0,        // şu anki soru
-  presentToken: 0,  // soru sunumu sırasında başka soruya geçilirse eskisini iptal etmek için
+  presentToken: 0,
+  corrections: {},  // okuma düzeltmeleri: soru sırası → "torbada dört kırmızı bilye var"   // soru sunumu sırasında başka soruya geçilirse eskisini iptal etmek için
   userStopped: false, // öğrenci "dur" dedi / ekrana dokundu
   history: [],      // [{role, text}] — sayfa hakkındaki konuşma
   busy: false,      // modelden cevap bekleniyor mu?
@@ -280,7 +281,7 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   const note = page.not && !keepIndex ? ` ${page.not}` : ''; // düzeltmeden sonra not okunmaz
 
   if (page.tur === 'konu') {
-    state.page = page; state.questions = []; state.history = [];
+    state.page = page; state.questions = []; state.history = []; state.corrections = {};
     state.phase = 'explain';
     await speaker.say(`Bu bir konu anlatımı sayfası.${note} Konuyu anlatıyorum.`, { remember: false });
     return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
@@ -297,6 +298,7 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   const prevIndex = state.qIndex;
   state.page = page;
   state.questions = all;
+  if (!keepIndex) state.corrections = {}; // yeni sayfa: eski düzeltmeler silinir
   let intro = all.length > 1 ? `Bu sayfada ${all.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
   if (keepIndex) intro = 'Düzelttim.'; // düzeltmeden sonra sayfaya baştan başlama
   else if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
@@ -323,7 +325,8 @@ async function presentQuestion(i, prefix = '') {
   // Öğrenci hangi konuda olduğunu bilsin: "Bu soru ... ünitesinden, ... konusuyla ilgili."
   if (q.unite) head += `Bu soru ${q.unite} ünitesinden${q.konu ? `, ${q.konu} konusuyla ilgili` : ''}. `;
   const body = String(q.okunus).replace(LEADING_NO, '');
-  const readText = `${prefix ? prefix + ' ' : ''}${head}${body}`.trim();
+  const fix = state.corrections?.[i] ? ` Düzeltme: ${state.corrections[i]}.` : '';
+  const readText = `${prefix ? prefix + ' ' : ''}${head}${body}${fix}`.trim();
 
   // Açıklamayı arka planda iste (okuma sürerken hazırlanır)
   state.busy = true; // okuma + açıklama bitene kadar mikrofon kapalı
@@ -368,9 +371,11 @@ function contextFor(i) {
   const p = state.page;
   if (!p) return '';
   const q = state.questions?.[i];
-  if (!q) return p.metin || '';
+  const fix = state.corrections?.[q ? i : 'sayfa'];
+  const fixLine = fix ? `\nDÜZELTME (sayfa yanlış okunmuş; bunu esas al, şıkları değiştirme): ${fix}` : '';
+  if (!q) return (p.metin || '') + fixLine;
   return (p.ortakBilgi ? `Ortak bilgi: ${p.ortakBilgi}\n` : '') +
-    (q.unite ? `Ünite: ${q.unite}${q.konu ? ` (konu: ${q.konu})` : ''}\n` : '') + `Soru ${q.no}: ${q.metin}`;
+    (q.unite ? `Ünite: ${q.unite}${q.konu ? ` (konu: ${q.konu})` : ''}\n` : '') + `Soru ${q.no}: ${q.metin}` + fixLine;
 }
 function currentContext() { return contextFor(state.qIndex); }
 
@@ -429,9 +434,18 @@ async function talk(mode, message) {
   await reply(text);
 }
 
+/**
+ * Okuma düzeltmesi ("yanlış okudun, torbada dört kırmızı bilye var").
+ * Sayfayı yapay zekâya YENİDEN YAZDIRMIYORUZ (canlı testte şıkları kendiliğinden değiştirdi).
+ * Düzeltme o sorunun yanına not olarak kaydedilir; okuma, açıklama, kontrol ve çözüm bunu esas alır.
+ */
 async function correctPage(correction) {
-  const res = await callAI({ mode: 'correct', pageText: state.page?.metin || '', message: 'Öğrencinin düzeltmesi: ' + correction });
-  if (res) handlePage(res.page, { keepIndex: true });
+  const key = state.questions?.length ? state.qIndex : 'sayfa';
+  state.corrections[key] = state.corrections[key] ? `${state.corrections[key]}; ${correction}` : correction;
+  state.phase = state.questions?.length ? 'question' : (state.page?.tur === 'konu' ? 'explain' : 'idle');
+  state.history.push({ role: 'user', text: `Okuma düzeltmesi: ${correction}` }, { role: 'model', text: 'Tamam, not aldım.' });
+  diag('duzeltme', { kelime: correction.split(/\s+/).length });
+  return reply(`Tamam, not aldım: ${correction}. Bu soruyu bundan sonra buna göre değerlendireceğim.`);
 }
 
 
@@ -510,7 +524,7 @@ async function handleInput(raw, { voice = false } = {}) {
       return reply(HELP_TEXT);
     case 'newq':
       state.presentToken++; state.busy = false;
-      state.page = null; state.history = []; state.questions = []; state.qIndex = 0; state.phase = 'idle'; state.closingSaid = false;
+      state.page = null; state.history = []; state.questions = []; state.qIndex = 0; state.phase = 'idle'; state.closingSaid = false; state.corrections = {};
       el.reply.textContent = '';
       return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.');
     case 'yes':
