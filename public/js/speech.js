@@ -23,6 +23,9 @@ export const speaker = {
   muted: false,       // ekran okuyucu modunda uygulama kendi sesini kapatır
   speaking: false,
   lastText: '',
+  recentSpoken: '', // son ~700 karakter (yankı tespiti)
+  lastSpokeAt: 0,
+  lastSpeechEndAt: 0, // son okumanın bittiği an (kısa yankı tespiti)
   failures: 0,      // art arda başarısız okuma sayısı (Türkçe ses yoksa artar)
   _token: 0,
 
@@ -49,6 +52,9 @@ export const speaker = {
   say(text, { rate, remember = true } = {}) {
     if (!text) return Promise.resolve();
     if (remember) this.lastText = text;
+    // Yankı filtresi için asistanın son söylediklerini (tüm mesajlar) sakla
+    this.recentSpoken = (this.recentSpoken + ' ' + text).slice(-700);
+    this.lastSpokeAt = Date.now();
     const wasBusy = Boolean(synth && (synth.speaking || synth.pending));
     this.stop();
     if (!synth || this.muted) return Promise.resolve();
@@ -65,6 +71,7 @@ export const speaker = {
         if (token !== this._token) return resolve(); // durduruldu
         if (i >= parts.length) {
           this.speaking = false; this.onChange?.(false);
+          this.lastSpeechEndAt = Date.now();
           return resolve();
         }
         const part = parts[i++];

@@ -61,6 +61,8 @@ export default async function handler(req, res) {
       jsonSchema: json ? READ_SCHEMA : undefined,
       // Cevap kontrolü ve çözümde model önce düşünsün (daha doğru); okumada hızlı olsun
       thinking: mode === 'check' || mode === 'solve',
+      // Tam sayfa fotoğrafını okumak daha uzun sürebilir
+      slow: mode === 'read' || mode === 'correct',
     });
 
     if (json) {
@@ -68,8 +70,9 @@ export default async function handler(req, res) {
       try {
         page = JSON.parse(stripFence(result.text));
       } catch {
-        // Model JSON vermediyse metni olduğu gibi kullan
-        page = { okunabilir: true, tur: 'belirsiz', metin: result.text, okunus: result.text, not: '' };
+        // Cevap yarıda kaldıysa (çok uzun sayfa) bozuk metni öğrenciye okutma
+        console.log('[okuma] JSON çözülemedi, uzunluk=' + result.text.length);
+        return send(res, 502, { error: 'Sayfa okunamadı', code: 'READ_FAILED' });
       }
       page.okunus = fixSpoken(page.okunus);
       page.ortakOkunus = fixSpoken(page.ortakOkunus);

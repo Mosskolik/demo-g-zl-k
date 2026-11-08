@@ -68,6 +68,7 @@ export function errorMessage(err) {
     case 'BAD_KEY': return 'Uygulamanın yapay zekâ anahtarı geçersiz. Öğretmenine haber ver.';
     case 'BLOCKED': return 'Bu içeriğe cevap veremedim. Başka bir sayfa dene.';
     case 'TOO_LARGE': return 'Görüntü çok büyük. Başka bir fotoğraf dene.';
+    case 'READ_FAILED': return 'Sayfayı okuyamadım. Sayfada çok soru olabilir. Telefonu sayfanın yarısına yaklaştırıp sadece birkaç soruyu çekmeyi dene.';
     default: return 'Bir sorun oldu. Lütfen tekrar dene.';
   }
 }

@@ -12,7 +12,7 @@ import { speaker, listener } from './speech.js';
 import { fb, unlockAudio, startThinkingTicks } from './feedback.js';
 import { CameraSource, FileSource } from './imageSource.js';
 import { checkQuality, QUALITY_MESSAGES } from './quality.js';
-import { parseCommand, HELP_TEXT } from './commands.js';
+import { parseCommand, normalize, HELP_TEXT } from './commands.js';
 import { askAI, errorMessage } from './api.js';
 import { diag } from './diag.js';
 
@@ -33,6 +33,8 @@ const state = {
   page: null,       // okunan sayfa (bkz. READ_SCHEMA)
   questions: [],    // tam görünen sorular (sırayla sorulur)
   qIndex: 0,        // şu anki soru
+  presentToken: 0,  // soru sunumu sırasında başka soruya geçilirse eskisini iptal etmek için
+  userStopped: false, // öğrenci "dur" dedi / ekrana dokundu
   history: [],      // [{role, text}] — sayfa hakkındaki konuşma
   busy: false,      // modelden cevap bekleniyor mu?
 };
@@ -157,7 +159,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 // ---------- Fotoğraf çekme ----------
 el.capture.addEventListener('click', () => {
   // Konuşurken dokunmak = sustur
-  if (speaker.speaking) { speaker.stop(); setStatus('Sustum. Fotoğraf için tekrar dokun.'); return; }
+  if (speaker.speaking) { state.userStopped = true; speaker.stop(); setStatus('Sustum. Fotoğraf için tekrar dokun.'); return; }
   takePhoto();
 });
 
@@ -216,8 +218,31 @@ const ordinal = (i) => ORDINALS[i] || `${i + 1}.`;
 const NUMWORD = '(?:\\d+\\.?|bir|iki|üç|dört|beş|altı|yedi|sekiz|dokuz|on(?: \\S+)?|yirmi(?: \\S+)?|otuz(?: \\S+)?)';
 const ORDWORD = '(?:\\S*(?:inci|ıncı|uncu|üncü|nci|ncı|ncu|ncü)|ilk)';
 const LEADING_NO = new RegExp(`^\\s*(?:soru\\s+${NUMWORD}|${ORDWORD}\\s+soru|\\d+\\.?\\s+soru)\\s*[.:,]?\\s*`, 'i');
-const CLOSING = 'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
-  'Anlamadığın yer olursa anlamadım de. Çözemezsen çözemedim de, birlikte çözeriz.';
+// İlk soruda tüm seçenekleri hatırlat; sonrakilerde kısa tut (asistanın kendi sesi mikrofona
+// kaçarsa komut sanılmasın diye komut kelimelerini mümkün olduğunca az söylüyoruz)
+const CLOSING_FIRST = 'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
+  'Anlamadığın yer olursa anlamadım de. Çözümü dinlemek istersen bana söylemen yeterli.';
+const CLOSING = 'Acele etme. Hazır olduğunda hazırım de.';
+
+/**
+ * Model sayfayı okuduktan sonra.
+ * @param {object} page  okunan sayfa (bkz. lib/prompts.js READ_SCHEMA)
+ * @param {{keepIndex?:boolean}} opts  düzeltmeden sonra aynı soruda kal
+ */
+/**
+ * Kesik kenarlara göre telefonun nasıl hareket ettirileceğini söyler.
+ * Cümleyi model değil uygulama kurar: her seferinde aynı, net ve çelişkisiz olsun.
+ */
+function guidanceFor(sides = []) {
+  const s = new Set((sides || []).filter((x) => ['ust', 'alt', 'sol', 'sag'].includes(x)));
+  const fit = 'Sayfa kadraja sığmıyor. Telefonu sayfadan biraz uzaklaştır, yani biraz yukarı kaldır.';
+  if (!s.size) return fit;
+  if ((s.has('sol') && s.has('sag')) || (s.has('ust') && s.has('alt')) || s.size >= 3) return fit;
+  const names = { ust: 'üst', alt: 'alt', sol: 'sol', sag: 'sağ' };
+  const moves = { sag: 'biraz sağa kaydır', sol: 'biraz sola kaydır', alt: 'biraz kendine doğru çek', ust: 'biraz ileri, sayfanın üstüne doğru it' };
+  const list = [...s];
+  return `Sayfanın ${list.map((x) => names[x]).join(' ve ')} tarafı kesik. Telefonu ${list.map((x) => moves[x]).join(', sonra ')}.`;
+}
 
 /**
  * Model sayfayı okuduktan sonra.
@@ -227,75 +252,117 @@ const CLOSING = 'Acele etme, düşünmek için zamanın var. Hazır olduğunda h
 async function handlePage(page, { keepIndex = false } = {}) {
   if (!page || page.okunabilir === false) {
     state.phase = state.page ? state.phase : 'idle';
-    const guide = page?.yonlendirme || page?.not || 'Sayfayı okuyamadım.';
+    const guide = page?.kesikKenarlar?.length ? guidanceFor(page.kesikKenarlar) : (page?.not || 'Sayfayı okuyamadım.');
     await reply(guide + ' Sonra tekrar dokun ya da çek de.');
     return;
   }
 
+  // ÇOK ÖNEMLİ: Sayfa tam görünmüyorsa görünen kısımla HİÇBİR ŞEY yapma (okuma, çözme, anlatma).
+  // Sadece telefonun nasıl kaydırılacağını söyle ve yeni fotoğrafı bekle.
+  const someCut = Array.isArray(page.sorular) && page.sorular.some((q) => q && q.tam === false);
+  if (page.kesik || page.kesikKenarlar?.length || someCut) {
+    state.phase = state.page ? state.phase : 'idle';
+    diag('kesik', { kenarlar: (page.kesikKenarlar || []).join(',') || '-', kesikSoru: someCut });
+    return reply(`Sayfanın tamamı görünmüyor. ${guidanceFor(page.kesikKenarlar)} Sonra tekrar dokun ya da çek de.`);
+  }
+
   // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
-  // Asistan emin olmadığı yerleri ve kesik kısımları kendisi söyler.
+  // Asistan emin olmadığı yerleri kendisi söyler.
   const note = page.not ? ` ${page.not}` : '';
-  const cut = page.kesik ? ` ${page.yonlendirme || 'Sayfanın bir kısmı fotoğrafın dışında kalmış.'}` : '';
 
   if (page.tur === 'konu') {
     state.page = page; state.questions = []; state.history = [];
-    if (page.kesik) {
-      // Kesik konu sayfası: önce yönlendir; öğrenci isterse görünen kısmı anlat
-      state.phase = 'explainOffer';
-      return reply(`Bu bir konu anlatımı sayfası, ama sayfanın bir kısmı görünmüyor.${cut} ` +
-        'Tekrar çekmek için ekrana dokun ya da çek de. Görünen kısmı anlatmamı istersen devam de.');
-    }
     state.phase = 'explain';
     await speaker.say(`Bu bir konu anlatımı sayfası.${note} Konuyu anlatıyorum.`, { remember: false });
     return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
   }
 
-  // Soru sayfası: tam görünen soruları sırayla sor
+  // Soru sayfası: soruları sırayla sor
   let all = Array.isArray(page.sorular) ? page.sorular.filter((q) => q && q.okunus) : [];
-  if (!all.length && page.okunus) all = [{ no: '1', tam: !page.kesik, metin: page.metin, okunus: page.okunus }];
-  const full = all.filter((q) => q.tam !== false);
-
-  if (!full.length) {
+  if (!all.length && page.okunus) all = [{ no: '1', tam: true, metin: page.metin, okunus: page.okunus }];
+  if (!all.length) {
     state.phase = state.page ? state.phase : 'idle';
-    return reply(`Soruyu tam göremiyorum.${cut || ' Sayfanın bir kısmı kesik.'} Sonra tekrar dokun ya da çek de.`);
+    return reply('Bu sayfada soru bulamadım. Sayfayı tekrar çekmeyi dene.');
   }
 
   const prevIndex = state.qIndex;
   state.page = page;
-  state.questions = full;
-  let intro = full.length > 1 ? `Bu sayfada ${full.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
-  if (all.length > full.length) intro += ` ${all.length - full.length} soru kesik olduğu için okuyamadım.${cut} İstersen sonra tekrar çekebilirsin.`;
-  else if (page.kesik) intro += cut;
+  state.questions = all;
+  let intro = all.length > 1 ? `Bu sayfada ${all.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
   if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
-  return presentQuestion(keepIndex ? Math.min(prevIndex, full.length - 1) : 0, intro + note);
+  return presentQuestion(keepIndex ? Math.min(prevIndex, all.length - 1) : 0, intro + note);
 }
 
-/** Sıradaki/istenen soruyu öğrenciye anlatır (ek istek atmaz; okunuş sayfa okumada hazırlandı) */
+/**
+ * Soruyu öğrenciye sunar:
+ *  1) Soruyu hemen okur (okunuş sayfa okumada hazırlandı).
+ *  2) Aynı anda, arka planda o sorunun açıklamasını ister (mode: question).
+ *  3) Okuma bitince açıklamayı söyler, sonra "Hazır olduğunda hazırım de."
+ * Böylece çok sorulu sayfalarda tek seferde uzun cevap beklenmez.
+ */
 async function presentQuestion(i, prefix = '') {
   const q = state.questions[i];
   if (!q) return;
+  const token = ++state.presentToken;
   state.qIndex = i;
   state.phase = 'question';
-  state.history = [];
+  state.userStopped = false;
+
   // Sayfadaki gerçek numarayı söyle ("Soru 7"); model okunuşa numara eklediyse onu sil (tekrar olmasın)
   let head = q.no ? `Soru ${q.no}. ` : (state.questions.length > 1 ? `${ordinal(i)} soru. ` : '');
   // Öğrenci hangi konuda olduğunu bilsin: "Bu soru ... ünitesinden, ... konusuyla ilgili."
   if (q.unite) head += `Bu soru ${q.unite} ünitesinden${q.konu ? `, ${q.konu} konusuyla ilgili` : ''}. `;
   const body = String(q.okunus).replace(LEADING_NO, '');
-  const text = `${prefix ? prefix + ' ' : ''}${head}${body} ${CLOSING}`;
-  state.history.push({ role: 'user', text: 'Soruyu bana anlat.' }, { role: 'model', text: q.okunus });
-  await reply(text.trim());
+  const readText = `${prefix ? prefix + ' ' : ''}${head}${body}`.trim();
+
+  // Açıklamayı arka planda iste (okuma sürerken hazırlanır)
+  state.busy = true; // okuma + açıklama bitene kadar mikrofon kapalı
+  el.capture.classList.add('busy');
+  let settled = false;
+  const explainP = askAI({ mode: 'question', message: 'Bu soruyu bana açıkla.', pageText: contextFor(i), history: [] })
+    .then((r) => r.reply)
+    .catch((err) => { diag('aciklama-hata', { kod: err.code }); return null; })
+    .finally(() => { settled = true; });
+
+  el.reply.textContent = readText;
+  await speaker.say(readText);
+  if (token !== state.presentToken) return; // bu arada başka soruya geçildi
+
+  let stopTicks = null;
+  if (!settled && !state.userStopped) {
+    notice('Şimdi soruyu açıklıyorum, biraz bekle.');
+    stopTicks = startThinkingTicks((m) => { if (!speaker.speaking) notice(m); });
+  }
+  const explanation = await explainP;
+  stopTicks?.();
+  state.busy = false;
+  el.capture.classList.remove('busy');
+  if (token !== state.presentToken) return;
+
+  const closing = state.closingSaid ? CLOSING : CLOSING_FIRST;
+  state.closingSaid = true;
+  const rest = [explanation, closing].filter(Boolean).join(' ');
+  state.history = [
+    { role: 'user', text: 'Soruyu bana anlat.' },
+    { role: 'model', text: `${body} ${explanation || ''}`.trim() },
+  ];
+  el.reply.textContent = `${readText} ${rest}`;
+  if (speaker.muted) el.srLive.textContent = el.reply.textContent;
+  if (!state.userStopped) await speaker.say(rest);
+  speaker.lastText = `${readText} ${rest}`; // "tekrar et" tamamını tekrarlasın
+  listenLoop();
 }
 
-/** Modele gönderilecek bağlam: konu sayfasında tüm metin, soru sayfasında ortak bilgi + o anki soru */
-function currentContext() {
+/** Modele gönderilecek bağlam: konu sayfasında tüm metin, soru sayfasında ortak bilgi + o soru */
+function contextFor(i) {
   const p = state.page;
   if (!p) return '';
-  const q = state.questions?.[state.qIndex];
+  const q = state.questions?.[i];
   if (!q) return p.metin || '';
   return (p.ortakBilgi ? `Ortak bilgi: ${p.ortakBilgi}\n` : '') +
     (q.unite ? `Ünite: ${q.unite}${q.konu ? ` (konu: ${q.konu})` : ''}\n` : '') + `Soru ${q.no}: ${q.metin}`;
 }
+function currentContext() { return contextFor(state.qIndex); }
 
 function moreQuestions() {
   return state.questions && state.qIndex < state.questions.length - 1;
@@ -359,10 +426,35 @@ async function correctPage(correction) {
 
 // ---------- Komutları işleme ----------
 /**
+ * Duyulan söz, asistanın son söylediklerinin bir parçası mı? (hoparlörden mikrofona kaçan ses)
+ * Kısa komutlar ("evet", "hazırım") asistanın cümlelerinde de geçebildiği için sadece
+ * 3+ kelimelik ve büyük ölçüde örtüşen sözler yankı sayılır.
+ */
+function isEcho(raw) {
+  const words = normalize(raw).split(' ').filter(Boolean);
+  if (!words.length) return false;
+  const spoken = ' ' + normalize(speaker.recentSpoken) + ' ';
+  // Kısa yankı: asistanın son cümlesinin SON kelimeleriyle birebir aynı ve konuşma biter bitmez duyulduysa
+  // (ör. "…hazırım de" → mikrofon "hazırım de" duydu). Öğrencinin kendi "hazırım"ı bununla eşleşmez.
+  if (Date.now() - speaker.lastSpeechEndAt < 10000 && spoken.trimEnd().endsWith(' ' + words.join(' '))) return true;
+  if (words.length < 3) return false;
+  if (spoken.includes(' ' + words.join(' ') + ' ')) return true;
+  const spokenWords = new Set(spoken.split(' '));
+  const overlap = words.filter((w) => spokenWords.has(w)).length / words.length;
+  return overlap >= 0.8 && Date.now() - speaker.lastSpokeAt < 60000;
+}
+
+/**
  * @param {string} raw  söylenen veya yazılan metin
  * @param {{voice?:boolean}} opts  voice=true → mikrofondan geldi (gürültü filtresi uygulanır)
  */
 async function handleInput(raw, { voice = false } = {}) {
+  // YANKI FİLTRESİ: mikrofon asistanın kendi sözünü duyduysa yok say
+  if (voice && isEcho(raw)) {
+    diag('yanki', { kelime: raw.trim().split(/\s+/).length });
+    setStatus('Dinliyorum…');
+    return;
+  }
   const cmd = parseCommand(raw);
   if (cmd.type === 'empty') return;
   diag('komut', { tur: cmd.type, kaynak: voice ? 'ses' : 'yazi/buton', asama: state.phase, kelime: raw.trim().split(/\s+/).length });
@@ -390,6 +482,7 @@ async function handleInput(raw, { voice = false } = {}) {
 
   switch (cmd.type) {
     case 'stop':
+      state.userStopped = true;
       speaker.stop(); listener.stop(); setStatus('Durdum.');
       return;
     case 'capture':
@@ -405,7 +498,8 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'help':
       return reply(HELP_TEXT);
     case 'newq':
-      state.page = null; state.history = []; state.questions = []; state.qIndex = 0; state.phase = 'idle';
+      state.presentToken++; state.busy = false;
+      state.page = null; state.history = []; state.questions = []; state.qIndex = 0; state.phase = 'idle'; state.closingSaid = false;
       el.reply.textContent = '';
       return reply('Tamam, yeni soruya geçiyoruz. Sayfayı yerleştir ve ekrana dokun ya da çek de.');
     case 'yes':
@@ -497,7 +591,9 @@ async function listenLoop() {
   try {
     while (handsFreeOn()) {
       if (speaker.speaking || state.busy || document.visibilityState !== 'visible') { await sleep(250); continue; }
-      if (beepBeforeListen) { fb.listen(); beepBeforeListen = false; await sleep(200); }
+      // Asistan sustuktan hemen sonra dinlemeye başlama: Android'de ses hoparlörden
+      // tam bitmeden "bitti" denebiliyor ve mikrofon asistanın kendi sesini duyuyor (yankı).
+      if (beepBeforeListen) { await sleep(800); if (speaker.speaking) continue; fb.listen(); beepBeforeListen = false; await sleep(200); }
       setStatus('Dinliyorum…');
       const t0 = Date.now();
       try {

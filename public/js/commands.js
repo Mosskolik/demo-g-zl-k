@@ -29,7 +29,9 @@ export function parseCommand(raw) {
   if (/^(hazırım|hazır|ben hazırım|tamam hazırım|evet hazırım|hazırım cevap vereceğim|cevap vereceğim|cevaplayacağım|cevabı söyleyeceğim)$/.test(t)) return { type: 'ready' };
 
   // "çözemedim", "cevabı söyle", "bilmiyorum" → çözümü ve cevabı anlat (cevap kalıbından ÖNCE)
-  if (/(çözemedim|çözemiyorum|yapamadım|yapamıyorum|bilmiyorum|bulamadım|cevabı söyle|cevabı ver|cevabı nedir|cevabı ne|cevap ne|cevap nedir|doğru cevap ne|cevabı açıkla|nasıl çözülür|pes ediyorum)/.test(t)) {
+  // Sadece KISA ve net isteklerde (en fazla 5 kelime): uzun bir cümlenin içinde geçmesi yetmez.
+  // (Asistanın kendi sesi mikrofona kaçarsa "…çözemedim de, birlikte çözeriz" yanlışlıkla çözüm başlatmasın.)
+  if (words.length <= 5 && /^(?:ben |hocam |tamam )?(çözemedim|çözemiyorum|yapamadım|yapamıyorum|bilmiyorum|bulamadım|pes ediyorum|cevabı söyle|cevabı ver|cevabı nedir|cevabı ne|cevap ne|cevap nedir|doğru cevap ne|cevabı açıkla|nasıl çözülür)/.test(t)) {
     return { type: 'solve', arg: 'gaveUp' };
   }
 
