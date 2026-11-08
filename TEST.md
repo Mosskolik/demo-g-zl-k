@@ -62,7 +62,7 @@ Sonra sayfayı yenile.
 | # | Yap | Duyman gereken |
 |---|---|---|
 | 2B.1 | **"yeni soru"** de. Birkaç sorunun olduğu **tam bir test sayfasının** fotoğrafını seç ya da çek. | "Bu sayfada 4 soru var. Sırayla gideceğiz." → "Soru 5. Bu soru Sayılar ve Cebir ünitesinden, … konusuyla ilgili." Numara, sayfadaki gerçek soru numarası olmalı. |
-| 2B.2 | Dinle. | Soruyu okumalı, sonra **"Bu soruyu sana açıklayayım"** deyip açıklamalı. Ardından "Verilenler şunlar…" ve "Senden istenen…" demeli. **Çözüm yolu veya ipucu vermemeli.** |
+| 2B.2 | Dinle. | Soruyu okumalı. Gerekirse "Şimdi soruyu açıklıyorum" deyip kısa bir süre bekler. Sonra **"Bu soruyu sana açıklayayım"** deyip açıklamalı. Ardından "Verilenler şunlar…" ve "Senden istenen…" demeli. **Çözüm yolu veya ipucu vermemeli.** |
 | 2B.3 | **"anlamadım"** de. | Soruyu daha basit anlatmalı. İpucu vermemeli. |
 | 2B.4 | **"sıradaki soru"** de. | Bir sonraki soruya geçmeli. |
 | 2B.5 | **"önceki soru"** de. | Önceki soruya dönmeli. |
@@ -70,11 +70,21 @@ Sonra sayfayı yenile.
 | 2B.7 | **"hazırım"** de ve doğru cevabı söyle. | Tebrik etmeli. Sonra "Sıradaki soruya geçmek için sıradaki soru de" demeli. |
 | 2B.8 | Bir soruda **"çözemedim"** de. | Çözüme başlarken sorunun hangi üniteden olduğunu söylemeli, sonra adım adım çözmeli. |
 
-## 2C. Kesik fotoğraf
+## 2C. Kesik fotoğraf (çok önemli)
 
 | # | Yap | Duyman gereken |
 |---|---|---|
-| 2C.1 | **"yeni soru"** de. Sayfanın **alt kısmı görünmeyecek** şekilde fotoğraf çek (ya da öyle bir fotoğraf seç). | Kesik olan soruyu söylemeli. "Telefonu biraz sayfanın alt tarafına doğru kaydır" gibi **net bir yön** vermeli. Tam görünen sorularla devam etmeli. |
+| 2C.1 | **"yeni soru"** de. Sayfanın **sağ tarafı** görünmeyecek şekilde fotoğraf çek. | "Sayfanın tamamı görünmüyor. Sayfanın sağ tarafı kesik. Telefonu biraz **sağa kaydır**." **Hiçbir soruyu okumamalı veya çözmemeli.** |
+| 2C.2 | Sayfanın **alt kısmı** görünmeyecek şekilde çek. | "…alt tarafı kesik. Telefonu biraz **kendine doğru çek**." |
+| 2C.3 | Söylenen yöne kaydırıp tekrar çek. | Artık soruları okumalı. |
+| 2C.4 | Kesik bir fotoğraftan sonra **"yine de devam"** de. | Sadece **tam görünen** soruları okumalı; yarım soruyu okumamalı. |
+
+## 2D. Yanlışlıkla çözmeme kontrolü
+
+| # | Yap | Duyman gereken |
+|---|---|---|
+| 2D.1 | Bir soru okunurken ve açıklanırken **hiçbir şey söyleme**, bekle. | Soru okunduktan sonra sadece "Hazır olduğunda hazırım de" demeli. **Kendi kendine çözmeye başlamamalı.** |
+| 2D.2 | Yanlış bir cevap ver. | "Doğru değil…" demeli ama **"sıradaki soruya geç" dememeli.** |
 
 ## 3. Konu anlatımı sayfası
 

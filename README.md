@@ -50,8 +50,14 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **sıradaki soru / önceki soru** | Sayfadaki sorular arasında gezer |
 | **yedinci soru** (sayfadaki numara) | O numaralı soruya gider |
 | **anlamadım** | Soruyu daha basit anlatır (ipucu vermeden) |
+| **yine de devam** | "Sayfa kesik" uyarısından sonra sadece tam görünen soruları okur |
 | **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
+
+**Kesik fotoğraf:** Sayfanın bir kenarı kesikse asistan hiçbir soruyu okumaz ve çözmez. Önce telefonun nasıl kaydırılacağını söyler, örneğin "Telefonu biraz sağa kaydır" ya da "kendine doğru çek".
+Kesik kenar iki yolla bulunur: yapay zekâ ve telefondaki piksel kontrolü.
+
+**Yankı koruması:** Mikrofon asistanın kendi sesini duyarsa bu ses yok sayılır. Böylece "çözemedim" gibi kelimeler asistanın ağzından çıkıp yanlışlıkla çözüm başlatmaz.
 
 Öğrenci düşünürken kendi kendine söylediği tek kelimeler (ör. "hmm") yok sayılır ve yapay zekâya gönderilmez.
 Bu, ücretsiz istek hakkını korur. Cevap beklenirken söylenen tek kelime ise cevap sayılır.
