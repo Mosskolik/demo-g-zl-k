@@ -263,8 +263,9 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
 
   // ÇOK ÖNEMLİ: Sayfa tam görünmüyorsa görünen kısımla HİÇBİR ŞEY yapma (okuma, çözme, anlatma).
   // Sadece telefonun nasıl kaydırılacağını söyle ve yeni fotoğrafı bekle.
-  // Kesik kenarlar: yapay zekânın söyledikleri + telefonun piksel kontrolünün bulduğu
-  const cutSides = [...new Set([...(page.kesikKenarlar || []), ...(page.pikselKesik || [])])];
+  // Kesik kenarlar: telefonun piksel kontrolü bir kenar bulduysa onu esas al (daha kesin);
+  // bulamadıysa (ör. kenarda masa görünüyor) yapay zekânın söylediğini kullan.
+  const cutSides = page.pikselKesik?.length ? page.pikselKesik : (page.kesikKenarlar || []);
   const someCut = Array.isArray(page.sorular) && page.sorular.some((q) => q && q.tam === false);
   if (!ignoreCut && (page.kesik || cutSides.length || someCut)) {
     state.phase = state.page ? state.phase : 'idle';
@@ -420,7 +421,8 @@ async function talk(mode, message) {
   state.history.push({ role: 'user', text: message }, { role: 'model', text: res.reply });
   let text = res.reply;
   // Doğru cevaptan veya çözümden sonra, sayfada başka soru varsa nasıl geçileceğini söyle
-  const correct = mode === 'check' && /tebrik|doğru(?!\s*değil)|harika|aferin/i.test(text) && !/doğru değil|yanlış/i.test(text);
+  // Doğruluğu model [DOĞRU]/[YANLIŞ] etiketiyle bildirir (sunucu ayırır); cümleden tahmin YAPMIYORUZ
+  const correct = mode === 'check' && res.correct === true;
   if ((correct || mode === 'solve') && moreQuestions()) text += ' Sıradaki soruya geçmek için sıradaki soru de.';
   else if ((correct || mode === 'solve') && state.questions?.length > 1) text += ' Bu sayfadaki son soruydu. Yeni sayfa için yeni soru de.';
   await reply(text);

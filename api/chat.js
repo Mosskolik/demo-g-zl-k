@@ -86,7 +86,15 @@ export default async function handler(req, res) {
       }
       return send(res, 200, { page, model: result.model });
     }
-    return send(res, 200, { reply: fixSpoken(result.text.trim()), model: result.model });
+    let text = fixSpoken(result.text.trim());
+    // Cevap kontrolünde model başa [DOĞRU]/[YANLIŞ] etiketi koyar: etiketi ayır, öğrenciye okutma
+    let correct;
+    if (mode === 'check') {
+      const tag = text.match(/^\s*\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/i);
+      if (tag) { correct = /^DO/i.test(tag[1]); text = text.slice(tag[0].length); }
+      text = text.replace(/\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/gi, '');
+    }
+    return send(res, 200, { reply: text, correct, model: result.model });
   } catch (err) {
     if (err instanceof ProviderError) {
       if (err.retryAfter) res.setHeader('Retry-After', String(err.retryAfter));

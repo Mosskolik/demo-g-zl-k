@@ -37,7 +37,9 @@ assert.equal(r.status, 200); assert.equal(r.data.page.tur, 'soru'); assert.equal
 console.log('✓ read modu');
 
 r = await call({ mode: 'check', pageText: 'x^2-5x+6=0', message: 'Öğrencinin cevabı: 5' });
-assert.equal(r.status, 200); assert.match(r.data.reply, /Tebrik/);
+assert.equal(r.status, 200); assert.match(r.data.reply, /^Tebrik/); assert.equal(r.data.correct, true);
+r = await call({ mode: 'check', pageText: 'x^2-5x+6=0', message: 'Öğrencinin cevabı: altı' });
+assert.equal(r.data.correct, false); assert.doesNotMatch(r.data.reply, /YANLIŞ\]/);
 console.log('✓ check modu');
 
 r = await call({ mode: 'yanlis' });
