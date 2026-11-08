@@ -277,7 +277,7 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
 
   // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
   // Asistan emin olmadığı yerleri kendisi söyler.
-  const note = page.not ? ` ${page.not}` : '';
+  const note = page.not && !keepIndex ? ` ${page.not}` : ''; // düzeltmeden sonra not okunmaz
 
   if (page.tur === 'konu') {
     state.page = page; state.questions = []; state.history = [];
