@@ -702,3 +702,6 @@ el.srMode.addEventListener('change', () => {
 // İnternet bağlantısı değişince haber ver
 window.addEventListener('offline', () => { fb.error(); notice('İnternet bağlantısı kesildi.'); });
 window.addEventListener('online', () => notice('İnternet bağlantısı geri geldi.'));
+
+// Uygulama kodu sorunsuz yüklendi (index.html'deki açılma koruması bunu kontrol eder)
+window.__appReady = true;

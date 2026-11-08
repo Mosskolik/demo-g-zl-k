@@ -81,5 +81,32 @@
   <div id="srLive" class="sr-only" aria-live="polite"></div>
 
   <script type="module" src="js/app.js"></script>
+  <!-- AÇILMA KORUMASI (eski tarayıcılar için, bilerek eski JavaScript ile yazıldı):
+       Uygulama kodu bu tarayıcıda yüklenemezse öğrenciye/öğretmene anlaşılır bir mesaj göster
+       ve geliştiriciye tanı kaydı gönder (hangi tarayıcı, hangi hata). -->
+  <script>
+    (function () {
+      var errors = [];
+      window.addEventListener('error', function (e) { errors.push(String(e.message || 'hata') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
+      function report(kind) {
+        try {
+          var body = JSON.stringify({ sid: 'acilis', ua: navigator.userAgent, events: [{ type: kind, hatalar: errors.slice(0, 5) }] });
+          if (!(navigator.sendBeacon && navigator.sendBeacon('/api/log', body))) {
+            var x = new XMLHttpRequest(); x.open('POST', '/api/log'); x.setRequestHeader('Content-Type', 'application/json'); x.send(body);
+          }
+        } catch (err) {}
+      }
+      function fail() {
+        var sub = document.querySelector('.start-sub');
+        if (sub) sub.innerHTML = 'Uygulama bu tarayıcıda açılamadı.<br>Telefonun tarayıcısını (Chrome veya Safari) güncelleyip sayfayı yenile.';
+        report('acilis-hatasi');
+      }
+      window.setTimeout(function () { if (!window.__appReady) fail(); }, 6000);
+    })();
+  </script>
+  <script nomodule>
+    // Çok eski tarayıcı: modern JavaScript hiç desteklenmiyor
+    document.querySelector('.start-sub').innerHTML = 'Bu tarayıcı çok eski.<br>Chrome veya Safari\'yi güncelleyip tekrar dene.';
+  </script>
 </body>
 </html>

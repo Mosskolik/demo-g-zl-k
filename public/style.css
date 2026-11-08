@@ -17,6 +17,7 @@ html, body { margin: 0; background: var(--bg); color: var(--fg); }
 body {
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   line-height: 1.4;
+  min-height: 100vh; /* eski tarayıcılar için yedek */
   min-height: 100dvh;
   padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom);
 }
@@ -25,7 +26,7 @@ button, input { font: inherit; }
 
 /* Başlangıç ekranı: tüm ekran tek buton */
 .start {
-  position: fixed; inset: 0; width: 100%; border: 0; background: var(--bg); color: var(--fg);
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100%; border: 0; background: var(--bg); color: var(--fg);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem;
   text-align: center; padding: 24px; cursor: pointer;
 }
@@ -33,7 +34,7 @@ button, input { font: inherit; }
 .start-sub { font-size: 1.3rem; }
 
 /* Tüm ekranı kaplayan dokunma alanı */
-.stage { position: relative; height: calc(100dvh - 16px); min-height: 320px; margin: 8px 0; }
+.stage { position: relative; height: calc(100vh - 16px); height: calc(100dvh - 16px); min-height: 320px; margin: 8px 0; }
 .gallery-btn {
   position: absolute; left: 0; right: 0; bottom: 0; height: 84px;
   display: flex; align-items: center; justify-content: center;
@@ -53,12 +54,12 @@ button, input { font: inherit; }
 }
 .helper-title { color: #ccc; font-size: .9rem; margin: 16px 2px 8px; }
 .capture {
-  position: absolute; inset: 0 0 80px 0; display: block; width: 100%;
+  position: absolute; top: 0; right: 0; bottom: 80px; left: 0; display: block; width: 100%;
   margin: 0; padding: 0; border: 4px solid var(--line); border-radius: 18px;
   background: #111; color: var(--fg); overflow: hidden; cursor: pointer;
 }
 .capture video {
-  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55;
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; opacity: .55;
 }
 .capture-label {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -73,7 +74,7 @@ button, input { font: inherit; }
 
 .status { margin: 6px 2px; font-size: 1.1rem; font-weight: 700; color: var(--accent); min-height: 1.5em; }
 
-.reply { border-left: 6px solid var(--accent); padding: 4px 12px; margin: 4px 0 12px; max-height: 30dvh; overflow-y: auto; }
+.reply { border-left: 6px solid var(--accent); padding: 4px 12px; margin: 4px 0 12px; max-height: 30vh; max-height: 30dvh; overflow-y: auto; }
 .reply p { margin: 0; font-size: 1.3rem; white-space: pre-wrap; }
 .reply:empty, .reply p:empty { display: none; }
 

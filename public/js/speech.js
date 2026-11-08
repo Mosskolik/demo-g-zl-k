@@ -115,11 +115,13 @@ export const speaker = {
   },
 };
 
+// Not: Eski iPhone'lar (iOS 16.4 öncesi Safari) "(?<=...)" (lookbehind) yazımını tanımaz ve
+// TÜM uygulama açılmaz. Bu yüzden cümleleri lookbehind kullanmadan bölüyoruz.
 function splitSentences(text) {
-  return text
-    .replace(/\s+/g, ' ')
-    .split(/(?<=[.!?…:;])\s+/)
-    .flatMap((s) => (s.length > 220 ? s.split(/(?<=,)\s+/) : [s]))
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  const sentences = clean.match(/[^.!?…:;]+[.!?…:;]*/g) || [clean];
+  return sentences
+    .flatMap((s) => (s.length > 220 ? s.match(/[^,]+,?/g) || [s] : [s]))
     .map((s) => s.trim())
     .filter(Boolean);
 }
