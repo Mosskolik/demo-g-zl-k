@@ -264,17 +264,18 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
 
   // ÇOK ÖNEMLİ: Sayfa tam görünmüyorsa görünen kısımla HİÇBİR ŞEY yapma (okuma, çözme, anlatma).
   // Sadece telefonun nasıl kaydırılacağını söyle ve yeni fotoğrafı bekle.
-  // Kesik kenarlar: telefonun piksel kontrolü bir kenar bulduysa onu esas al (daha kesin);
-  // bulamadıysa (ör. kenarda masa görünüyor) yapay zekânın söylediğini kullan.
-  const cutSides = page.pikselKesik?.length ? page.pikselKesik : (page.kesikKenarlar || []);
-  const someCut = Array.isArray(page.sorular) && page.sorular.some((q) => q && q.tam === false);
-  if (!ignoreCut && (page.kesik || cutSides.length || someCut)) {
-    state.phase = state.page ? state.phase : 'idle';
-    state.lastCutPage = page; // öğrenci "yine de devam" derse sadece tam soruları okumak için
-    diag('kesik', { kenarlar: cutSides.join(',') || '-', kesikSoru: someCut });
-    return reply(`Sayfanın tamamı görünmüyor. ${guidanceFor(cutSides)} Sonra tekrar dokun ya da çek de.`);
-  }
-  state.lastCutPage = null;
+  // KESİK SAYFA KURALI (sunumdan sonra düzeltildi):
+  //  - Yarım görünen soru ASLA okunmaz/çözülmez.
+  //  - Tam görünen sorular HER ZAMAN okunur; kesik soru için sadece yön söylenir.
+  //  - Hiç tam soru yoksa sadece yön söylenir.
+  //  - Telefonun piksel kontrolü tek başına ENGELLEMEZ (gerçek fotoğraflarda karşı sayfa, masa
+  //    deseni vb. yüzünden yanlış alarm veriyordu); sadece yapay zekâ da kesik derse yön için kullanılır.
+  const modelSides = page.kesikKenarlar || [];
+  const cutSides = modelSides.length && page.pikselKesik?.length ? page.pikselKesik : modelSides;
+  const sorular = Array.isArray(page.sorular) ? page.sorular.filter((q) => q && q.okunus) : [];
+  const partial = sorular.filter((q) => q.tam === false);
+  const guide = guidanceFor(cutSides);
+  diag('kesik-karar', { model: modelSides.join(',') || '-', piksel: (page.pikselKesik || []).join(',') || '-', yarim: partial.length, tam: sorular.length - partial.length });
 
   // Görme engelli öğrenci sayfayı göremediği için "doğru okudum mu?" diye SORMUYORUZ.
   // Asistan emin olmadığı yerleri kendisi söyler.
@@ -283,7 +284,8 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   if (page.tur === 'konu') {
     state.page = page; state.questions = []; state.history = []; state.corrections = {};
     state.phase = 'explain';
-    await speaker.say(`Bu bir konu anlatımı sayfası.${note} Konuyu anlatıyorum.`, { remember: false });
+    const cutNote = page.kesik && modelSides.length ? ` Sayfanın bir kısmı görünmüyor, görünen kısmı anlatıyorum. Tamamı için: ${guide}` : '';
+    await speaker.say(`Bu bir konu anlatımı sayfası.${note}${cutNote} Konuyu anlatıyorum.`, { remember: false });
     return talk('explain', 'Bu sayfadaki konuyu bana anlatmaya başla.');
   }
 
@@ -292,6 +294,10 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   if (!all.length && page.okunus) all = [{ no: '1', tam: true, metin: page.metin, okunus: page.okunus }];
   if (!all.length) {
     state.phase = state.page ? state.phase : 'idle';
+    if (partial.length || page.kesik) {
+      // Hiçbir soru tam görünmüyor: sadece yön söyle
+      return reply(`Soruyu tam göremiyorum. ${guide} Sonra tekrar dokun ya da çek de.`);
+    }
     return reply('Bu sayfada soru bulamadım. Sayfayı tekrar çekmeyi dene.');
   }
 
@@ -301,7 +307,14 @@ async function handlePage(page, { keepIndex = false, ignoreCut = false } = {}) {
   if (!keepIndex) state.corrections = {}; // yeni sayfa: eski düzeltmeler silinir
   let intro = all.length > 1 ? `Bu sayfada ${all.length} soru var. Sırayla gideceğiz.` : 'Bu bir soru.';
   if (keepIndex) intro = 'Düzelttim.'; // düzeltmeden sonra sayfaya baştan başlama
-  else if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
+  else {
+    // Yarım kalan sorular okunmaz; hangileri olduğu ve telefonun nasıl kaydırılacağı söylenir
+    if (partial.length && !ignoreCut) {
+      const nos = partial.map((q) => q.no).filter(Boolean).join(', ');
+      intro += ` ${nos ? nos + ' numaralı soru' : 'Bir soru'} tam görünmediği için onu okumuyorum. ${guide} O soru için sonra tekrar çekebilirsin.`;
+    }
+    if (page.ortakOkunus) intro += ` Önce birkaç soruyu ilgilendiren ortak bilgiyi okuyorum: ${page.ortakOkunus}`;
+  }
   return presentQuestion(keepIndex ? Math.min(prevIndex, all.length - 1) : 0, intro + note);
 }
 
@@ -539,10 +552,8 @@ async function handleInput(raw, { voice = false } = {}) {
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       return talk('free', raw);
     case 'forceContinue':
-      // Kesik uyarısından sonra öğrenci isterse: SADECE tam görünen soruları oku
-      if (!state.lastCutPage) return notice('Şu an devam edilecek bir sayfa yok.');
-      await speaker.say('Tamam. Sadece tam görünen soruları okuyorum. Kenara yakın sorularda okuma hatası olabilir.', { remember: false });
-      return handlePage(state.lastCutPage, { ignoreCut: true });
+      // Artık gerek yok: tam görünen sorular zaten her zaman okunuyor (eski komut kırılmasın diye duruyor)
+      return notice('Tam görünen soruları zaten okuyorum. Kesik bir soru için telefonu kaydırıp tekrar çek.');
     case 'nextq':
       if (!state.questions?.length) return notice('Şu an soru yok. Bir soru sayfasının fotoğrafını çek.');
       if (!moreQuestions()) return reply('Bu sayfadaki son sorudaydık. Yeni sayfa için yeni soru de.');

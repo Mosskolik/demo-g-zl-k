@@ -20,6 +20,14 @@ export default {
     const init = { method: request.method, headers, redirect: 'manual' };
     if (request.method !== 'GET' && request.method !== 'HEAD') init.body = request.body;
 
+    // Tanı kayıtlarını Cloudflare günlüğüne de yaz (Vercel ücretsiz planı 30 dk, Cloudflare 3 gün saklar).
+    // Sadece olay türleri ve hata kodları gelir; konuşma, ses ve fotoğraf yoktur.
+    if (url.pathname === '/api/log' && request.method === 'POST') {
+      const text = await request.text();
+      console.log('[tani] ' + text.slice(0, 4000));
+      init.body = text;
+    }
+
     try {
       const res = await fetch(target, init);
       return new Response(res.body, res);

@@ -111,7 +111,6 @@ export const HELP_TEXT =
   'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
   'Sıradaki soru, önceki soru ya da üçüncü soru: sayfadaki sorular arasında gezersin. ' +
   'Anlamadım: soruyu daha basit anlatırım. ' +
-  'Yine de devam: sayfa kesik dediğimde, sadece tam görünen soruları okurum. ' +
   'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';
