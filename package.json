@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "node scripts/dev-server.js",
     "mock": "AI_PROVIDER=mock node scripts/dev-server.js",
-    "test": "node scripts/test-api.js"
+    "test": "node scripts/test-api.js && node scripts/test-gemini.js"
   },
   "engines": { "node": ">=20" }
 }
