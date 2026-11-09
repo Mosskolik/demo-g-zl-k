@@ -23,6 +23,11 @@ try {
   let t0 = Date.now(); r = await mk().generate(req);
   assert.equal(r.model, 'b'); assert.ok(Date.now() - t0 < 1000, 'yedek hızlı kazanmalı');
 
+  // 2b) İlk iki model takılı → üçüncü model de yarışa girer ve kazanır
+  route({ a: (s) => never(s), b: (s) => never(s), c: (s) => later(50, ok('C'), s) });
+  t0 = Date.now(); r = await mk().generate(req);
+  assert.equal(r.model, 'c'); assert.ok(Date.now() - t0 < 1200, 'üçüncü model ~2 yarış aralığında kazanmalı');
+
   // 3) Ana modelin kotası dolu → hemen yedeğe geçer (yarış beklemeden)
   route({ a: () => Promise.resolve(quota()), b: (s) => later(50, ok('B'), s) });
   t0 = Date.now(); r = await mk().generate(req);
@@ -41,4 +46,4 @@ try {
   route({ a: () => Promise.resolve(quota()), b: () => Promise.resolve(quota()), c: () => Promise.resolve(quota()) });
   await assert.rejects(mk().generate(req), (e) => e.code === 'DAILY_LIMIT');
 } finally { console.log = quiet; }
-console.log('✓ Gemini yedekli yarış ve hata mantığı (6 durum)');
+console.log('✓ Gemini yedekli yarış ve hata mantığı (7 durum)');
