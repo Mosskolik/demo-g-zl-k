@@ -50,12 +50,11 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **sıradaki soru / önceki soru** | Sayfadaki sorular arasında gezer |
 | **yedinci soru** (sayfadaki numara) | O numaralı soruya gider |
 | **anlamadım** | Soruyu daha basit anlatır (ipucu vermeden) |
-| **yine de devam** | "Sayfa kesik" uyarısından sonra sadece tam görünen soruları okur |
 | **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 
-**Kesik fotoğraf:** Sayfanın bir kenarı kesikse asistan hiçbir soruyu okumaz ve çözmez. Önce telefonun nasıl kaydırılacağını söyler, örneğin "Telefonu biraz sağa kaydır" ya da "kendine doğru çek".
-Kesik kenar iki yolla bulunur: yapay zekâ ve telefondaki piksel kontrolü.
+**Kesik fotoğraf:** Yarım görünen bir soru asla okunmaz ve çözülmez. Asistan o soru için telefonun nasıl kaydırılacağını söyler ("Telefonu biraz sağa kaydır", "kendine doğru çek"). Tam görünen sorular her zaman okunur.
+Hiçbir soru tam görünmüyorsa sadece yön söylenir. Telefondaki piksel kontrolü tek başına engellemez; yalnızca yön tarifinde yardımcı olur. Bunun nedeni, açık kitabın karşı sayfası gibi durumlarda yanlış alarm vermesidir.
 
 **Yankı koruması:** Mikrofon asistanın kendi sesini duyarsa bu ses yok sayılır. Böylece "çözemedim" gibi kelimeler asistanın ağzından çıkıp yanlışlıkla çözüm başlatmaz.
 

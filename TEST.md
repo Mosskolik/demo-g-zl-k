@@ -74,10 +74,10 @@ Sonra sayfayı yenile.
 
 | # | Yap | Duyman gereken |
 |---|---|---|
-| 2C.1 | **"yeni soru"** de. Sayfanın **sağ tarafı** görünmeyecek şekilde fotoğraf çek. | "Sayfanın tamamı görünmüyor. Sayfanın sağ tarafı kesik. Telefonu biraz **sağa kaydır**." **Hiçbir soruyu okumamalı veya çözmemeli.** |
-| 2C.2 | Sayfanın **alt kısmı** görünmeyecek şekilde çek. | "…alt tarafı kesik. Telefonu biraz **kendine doğru çek**." |
-| 2C.3 | Söylenen yöne kaydırıp tekrar çek. | Artık soruları okumalı. |
-| 2C.4 | Kesik bir fotoğraftan sonra **"yine de devam"** de. | Sadece **tam görünen** soruları okumalı; yarım soruyu okumamalı. |
+| 2C.1 | Sağdaki bir sorunun yarısı görünmeyecek şekilde fotoğraf çek. | Tam görünen soruları okur. Yarım soruyu **okumaz**: "… numaralı soru tam görünmediği için onu okumuyorum. Telefonu biraz **sağa kaydır**." |
+| 2C.2 | En alttaki sorunun yarısı görünmeyecek şekilde çek. | Aynısı: "…Telefonu biraz **kendine doğru çek**." |
+| 2C.3 | Açık kitabın bir sayfasını çek; karşı sayfa da kenarda görünsün. | Sayfadaki soruları normal okur. Karşı sayfa yüzünden "kesik" **demez**. |
+| 2C.4 | Hiçbir sorunun tam görünmediği bir fotoğraf çek. | Sadece yön söyler: "Soruyu tam göremiyorum. Telefonu …" |
 
 ## 2D. Yanlışlıkla çözmeme kontrolü
 
