@@ -258,6 +258,12 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
 - Günlük kota Türkiye saatiyle yaklaşık 11:00'de (yaz aylarında 10:00'da) yenilenir.
 - Kalan kotanı https://aistudio.google.com/usage sayfasından görebilirsin.
 
+## 📚 Araştırma: telefonda çalışan model
+
+Nihai ürün (Android uygulaması + Ray-Ban Meta Gen 2) için internetsiz, telefonda çalışacak model araştırması:
+[docs/arastirma/Telefonda çalışan görsel dil modeli.md](docs/arastirma/Telefonda%20%C3%A7al%C4%B1%C5%9Fan%20g%C3%B6rsel%20dil%20modeli.md) (Kasım 2026).
+Ham notlar `docs/arastirma/notlar/` klasöründe.
+
 ## 🔒 Gizlilik ve güvenlik
 
 - API anahtarı yalnızca Vercel sunucusunda durur. Tarayıcı koduna ve GitHub'a hiç girmez.
