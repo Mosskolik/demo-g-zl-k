@@ -1,0 +1,14 @@
+{
+  "name": "matematik-asistani",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Görme engelli lise öğrencileri için sesli matematik asistanı (TEKNOFEST prototipi)",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev-server.js",
+    "mock": "AI_PROVIDER=mock node scripts/dev-server.js",
+    "test": "node scripts/test-api.js && node scripts/test-gemini.js && node scripts/test-saglayicilar.js",
+    "yaris": "node scripts/yaris.js"
+  },
+  "engines": { "node": ">=20" }
+}

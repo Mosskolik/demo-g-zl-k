@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#000000">
+  <meta name="description" content="Görme engelli öğrenciler için sesli matematik asistanı">
+  <title>Sesli Matematik Asistanı</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Başlangıç ekranı: tarayıcılar ses ve kamerayı ancak bir dokunuştan sonra açar -->
+  <button id="startScreen" class="start" aria-label="Sesli matematik asistanını başlatmak için ekrana dokun">
+    <span class="start-title">Sesli Matematik Asistanı</span>
+    <span class="start-sub">Başlamak için ekrana dokun</span>
+  </button>
+
+  <main id="app" hidden>
+    <!-- TÜM EKRAN tek dokunma alanı: dokun = fotoğraf çek, asistan konuşurken dokun = sustur.
+         Görme engelli öğrenci butonları kullanmaz; her şey sesle yürür. -->
+    <div class="stage">
+      <p id="ttsWarn" class="tts-warn" role="alert" hidden></p>
+      <button id="captureArea" class="capture" aria-label="Ekranın her yeri. Fotoğraf çekmek için dokun. Ben konuşurken dokunursan susarım. Diğer her şeyi sesle söyleyebilirsin.">
+        <video id="video" playsinline muted autoplay aria-hidden="true"></video>
+        <span class="capture-label" aria-hidden="true">
+          <span class="big">DOKUN</span>
+          <span>fotoğraf çek</span>
+          <span class="ear">👂 Dinliyorum — konuşabilirsin</span>
+        </span>
+      </button>
+      <!-- Kısa durum mesajları ekran okuyucuya bildirilir -->
+      <p id="status" class="status" role="status" aria-live="polite">Hazır</p>
+      <!-- Prototip için: kamera yerine galeriden görsel ekleme butonu (ekranın en altında) -->
+      <label class="gallery-btn">
+        🖼️ Galeriden görsel ekle
+        <input id="fileInput" type="file" accept="image/*" aria-label="Galeriden görsel ekle">
+      </label>
+    </div>
+
+    <p class="helper-title">Aşağısı gören yardımcılar (öğretmen, aile) içindir:</p>
+
+    <!-- Asistanın son söylediği metin (az görenler için büyük yazı) -->
+    <section id="replyBox" class="reply" aria-label="Asistanın son söylediği" tabindex="0">
+      <p id="reply"></p>
+    </section>
+
+    <!-- Büyük butonlar -->
+    <nav class="buttons" aria-label="Komutlar">
+      <button id="btnTalk" class="btn wide talk" aria-label="Konuş. Dokun ve komutunu ya da sorunu söyle.">🎤 Konuş</button>
+      <button id="btnRepeat" class="btn" aria-label="Tekrar et">Tekrar</button>
+      <button id="btnSlow" class="btn" aria-label="Yavaş oku">Yavaş oku</button>
+      <button id="btnYes" class="btn" aria-label="Evet, devam et">Evet / Devam</button>
+      <button id="btnSolve" class="btn" aria-label="Çöz">Çöz</button>
+      <button id="btnAnswer" class="btn" aria-label="Cevabım. Dokun ve cevabını söyle.">Cevabım</button>
+      <button id="btnNew" class="btn" aria-label="Yeni soru">Yeni soru</button>
+      <button id="btnStop" class="btn wide stop" aria-label="Dur, sesi kes">Dur</button>
+    </nav>
+
+    <!-- Yazarak kullanma (iPhone'da mikrofon çalışmazsa) -->
+    <form id="textForm" class="textform" autocomplete="off">
+      <label for="textInput">Yaz ve gönder (ör. "cevabım 5", "çöz", "evet")</label>
+      <div class="row">
+        <input id="textInput" type="text" enterkeyhint="send" inputmode="text">
+        <button class="btn send" type="submit">Gönder</button>
+      </div>
+    </form>
+
+    <details class="settings">
+      <summary>Ayarlar</summary>
+      <label for="rate">Okuma hızı: <output id="rateOut">1.0</output></label>
+      <input id="rate" type="range" min="0.5" max="1.6" step="0.1" value="1.0">
+      <label class="check"><input id="autoListen" type="checkbox"> Sürekli dinle (eller serbest, buton gerekmez)</label>
+      <label class="check"><input id="srMode" type="checkbox"> Ekran okuyucu kullanıyorum (uygulamanın kendi sesini kapat)</label>
+      <button id="btnHelp" class="btn" type="button">Komutları dinle</button>
+      <p class="hint">Komutlar: çek, tekrar et, yavaş oku, çöz, cevabım …, yeni soru, dur.</p>
+    </details>
+  </main>
+
+  <!-- Ekran okuyucu modunda uzun cevaplar buradan okunur -->
+  <div id="srLive" class="sr-only" aria-live="polite"></div>
+
+  <script type="module" src="js/app.js"></script>
+  <!-- AÇILMA KORUMASI (eski tarayıcılar için, bilerek eski JavaScript ile yazıldı):
+       Uygulama kodu bu tarayıcıda yüklenemezse öğrenciye/öğretmene anlaşılır bir mesaj göster
+       ve geliştiriciye tanı kaydı gönder (hangi tarayıcı, hangi hata). -->
+  <script>
+    (function () {
+      var errors = [];
+      window.addEventListener('error', function (e) { errors.push(String(e.message || 'hata') + ' @' + String(e.filename || '').split('/').pop() + ':' + (e.lineno || '')); });
+      function report(kind) {
+        try {
+          var body = JSON.stringify({ sid: 'acilis', ua: navigator.userAgent, events: [{ type: kind, hatalar: errors.slice(0, 5) }] });
+          if (!(navigator.sendBeacon && navigator.sendBeacon('/api/log', body))) {
+            var x = new XMLHttpRequest(); x.open('POST', '/api/log'); x.setRequestHeader('Content-Type', 'application/json'); x.send(body);
+          }
+        } catch (err) {}
+      }
+      function fail() {
+        var sub = document.querySelector('.start-sub');
+        if (sub) sub.innerHTML = 'Uygulama bu tarayıcıda açılamadı.<br>Telefonun tarayıcısını (Chrome veya Safari) güncelleyip sayfayı yenile.';
+        report('acilis-hatasi');
+      }
+      window.setTimeout(function () { if (!window.__appReady) fail(); }, 6000);
+    })();
+  </script>
+  <script nomodule>
+    // Çok eski tarayıcı: modern JavaScript hiç desteklenmiyor
+    document.querySelector('.start-sub').innerHTML = 'Bu tarayıcı çok eski.<br>Chrome veya Safari\'yi güncelleyip tekrar dene.';
+  </script>
+</body>
+</html>
