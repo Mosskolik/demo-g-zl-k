@@ -251,6 +251,23 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
   Vercel'de **Proje → Logs** sekmesinden görülebilir. Ücretsiz planda kayıtlar 30 dakika saklanır.
 - Telefonda adım adım test için: **[TEST.md](TEST.md)**
 
+## 🔑 Birden fazla ücretsiz sağlayıcı (zincir)
+
+Uygulama tek bir yapay zekâ servisine bağlı değildir. Anahtarı eklenen her sağlayıcı sıraya girer; biri kotasını doldurursa, yavaşlarsa ya da hata verirse sıradaki devreye girer (`lib/providers/chain.js`).
+
+| Sağlayıcı | Vercel'deki değişken adı | Anahtar nereden alınır |
+|---|---|---|
+| Google Gemini | `GEMINI_API_KEY` | aistudio.google.com/apikey |
+| Groq | `GROQ_API_KEY` | console.groq.com/keys |
+| Mistral | `MISTRAL_API_KEY` | console.mistral.ai → API Keys |
+| NVIDIA NIM | `NVIDIA_API_KEY` | build.nvidia.com → Get API Key |
+| Cloudflare Workers AI | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com/profile/api-tokens ("Workers AI" şablonu) |
+| OpenRouter | `OPENROUTER_API_KEY` | openrouter.ai/keys |
+
+- Sıra `AI_CHAIN` ile, model adları `GROQ_MODELS` gibi değişkenlerle değiştirilir.
+- Devrede olanlar: `/api/health` ve `/api/models`. Bir sağlayıcının model adları: `/api/models?saglayici=groq`.
+- **Yarış (karşılaştırma):** `npm run yaris` her adayı aynı 4 Türkçe test sayfasıyla (`tests/yaris/`) dener ve okuma, cevap kontrolü, ipucu vermeme ve hıza göre sıralar. Aday başına 9 istek harcar.
+
 ## 📊 Ücretsiz kota hakkında (Kasım 2026 ölçümü)
 
 - `gemini-3.5-flash` ücretsiz katmanda **günde yalnızca 20 istek** veriyor.

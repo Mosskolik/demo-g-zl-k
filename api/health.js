@@ -13,5 +13,7 @@ export default async function handler(req, res) {
     provider: config.provider,
     model: config.provider === 'gemini' ? config.gemini.model : config.provider === 'ollama' ? config.ollama.model : 'mock',
     apiKeyEklendi: config.provider !== 'gemini' || Boolean(config.gemini.apiKey),
+    // Hangi sağlayıcıların anahtarı eklenmiş? (anahtarların kendisi gösterilmez)
+    saglayicilar: Object.fromEntries([['gemini', Boolean(config.gemini.apiKey)], ...Object.entries(config.extra).map(([n, c]) => [n, Boolean(c.apiKey && c.baseUrl)])]),
   }));
 }

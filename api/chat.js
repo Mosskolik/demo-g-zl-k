@@ -29,6 +29,8 @@ export default async function handler(req, res) {
   }
 
   const { mode, image, pageText = '', history = [], message = '' } = body || {};
+  // only: karşılaştırma (yarış) için tek bir adayı zorla, ör. "groq" ya da "groq:model-adı"
+  const only = typeof body?.only === 'string' && /^[\w.:@/-]{1,100}$/.test(body.only) ? body.only : undefined;
   if (!MODES.includes(mode)) return send(res, 400, { error: 'Geçersiz mod', code: 'BAD_REQUEST' });
   if (mode === 'read' && (typeof image !== 'string' || !image)) {
     return send(res, 400, { error: 'Görüntü yok', code: 'BAD_REQUEST' });
@@ -66,6 +68,7 @@ export default async function handler(req, res) {
       preferFast: mode === 'question' || mode === 'free' || mode === 'explain',
       // Sayfa okumada cevap geçerli JSON değilse (yarım kalmış) sıradaki modeli dene
       validate: json ? isValidPage : null,
+      only,
     });
 
     if (json) {
