@@ -44,7 +44,7 @@ try {
     chain: ['gemini', 'groq', 'mistral'],
   };
   const chain = new ChainProvider(cfg);
-  assert.deepEqual(chain.providers.map((x) => x.name), ['gemini', 'groq']);
+  assert.deepEqual(chain.providers.map((x) => x.name).sort(), ['gemini', 'groq']);
   assert.deepEqual(chain.candidates(req).map((c) => c.id), ['gemini:g1', 'groq:q1']);
   const calls = [];
   globalThis.fetch = async (url) => {
@@ -64,8 +64,14 @@ try {
   const chain2 = new ChainProvider({ ...cfg, chain: ['groq', 'gemini'] });
   assert.deepEqual(chain2.candidates(req).map((c) => c.id), ['groq:q1', 'gemini:g1']);
 
+  // 6b) Model düzeyinde sıra + basit işlerde güçlü Gemini modeli sona
+  const cfg3 = { ...cfg, gemini: { ...cfg.gemini, model: 'guclu', fallbackModels: ['lite'] }, chain: ['gemini:guclu', 'groq', 'gemini'] };
+  const chain3 = new ChainProvider(cfg3);
+  assert.deepEqual(chain3.candidates(req).map((c) => c.id), ['gemini:guclu', 'groq:q1', 'gemini:lite']);
+  assert.deepEqual(chain3.candidates({ ...req, preferFast: true }).map((c) => c.id), ['groq:q1', 'gemini:lite', 'gemini:guclu']);
+
   // 7) Hiç anahtar yoksa NO_KEY
   const none = new ChainProvider({ gemini: { ...cfg.gemini, apiKey: '' }, extra: {}, chain: ['gemini'] });
   await assert.rejects(none.generate(req), (e) => e.code === 'NO_KEY');
 } finally { console.log = quiet; }
-console.log('✓ OpenAI uyumlu sağlayıcı ve zincir (7 durum)');
+console.log('✓ OpenAI uyumlu sağlayıcı ve zincir (8 durum)');
