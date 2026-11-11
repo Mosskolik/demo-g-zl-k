@@ -19,13 +19,23 @@ const BASE = arg('url', 'https://app.matematik-asistani.workers.dev').replace(/\
 const ONLY = arg('sadece', '');
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Dakikalık sınıra (RATE_LIMIT) ya da yoğunluğa takılırsa bekleyip yeniden dener:
+// amaç hız sınırını değil, modelin KALİTESİNİ ölçmek. Beklemeler süreye sayılmaz.
+let beklemeSayisi = 0;
 async function post(body) {
-  const t = Date.now();
-  try {
-    const r = await fetch(BASE + '/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(125000) });
-    const d = await r.json().catch(() => ({}));
-    return { ok: r.ok, ms: Date.now() - t, ...d };
-  } catch (e) { return { ok: false, ms: Date.now() - t, code: 'AG', error: e.message }; }
+  for (let attempt = 1; ; attempt++) {
+    const t = Date.now();
+    let x;
+    try {
+      const r = await fetch(BASE + '/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(125000) });
+      const d = await r.json().catch(() => ({}));
+      x = { ok: r.ok, ms: Date.now() - t, ...d };
+    } catch (e) { x = { ok: false, ms: Date.now() - t, code: 'AG', error: e.message }; }
+    if (x.ok || attempt >= 4 || !['RATE_LIMIT', 'OVERLOADED'].includes(x.code)) return x;
+    beklemeSayisi++;
+    const m = String(x.error || '').match(/try again in ([\d.]+)s/i);
+    await sleep(Math.min(70, Math.ceil(m ? Number(m[1]) : Number(x.retryAfter) || 20) + 3) * 1000);
+  }
 }
 const img = (f) => fs.readFileSync(path.join(dir, f)).toString('base64');
 const norm = (s) => String(s || '').replace(/[−–]/g, '-').replace(/\s+/g, ' ').toLocaleLowerCase('tr-TR');
@@ -70,6 +80,7 @@ const LEAK = /pisagor|on üç|\b13\b|karelerinin toplam|kareleri toplam|144|169|
 
 async function runCandidate(id) {
   const r = { id, okuma: 0, okumaToplam: 0, kontrol: 0, ipucu: null, sure: [], hata: {}, eksik: [] };
+  beklemeSayisi = 0;
   const fail = (x) => { const k = x.code || x.error || 'HATA'; r.hata[k] = (r.hata[k] || 0) + 1; };
   for (const [file, checks] of READS) {
     r.okumaToplam += checks.length;
@@ -87,6 +98,7 @@ async function runCandidate(id) {
   }
   const x = await post({ mode: 'question', message: 'Bu soruyu bana açıkla.', pageText: Q7, history: [], only: id });
   if (!x.ok) fail(x); else { r.sure.push(x.ms); r.ipucu = LEAK.test(x.reply || ''); if (r.ipucu) r.eksik.push('açıklamada ipucu: ' + (x.reply.match(LEAK) || [''])[0]); }
+  r.bekleme = beklemeSayisi;
   return r;
 }
 
@@ -105,7 +117,7 @@ for (const id of ids) {
 }
 results.sort((a, b) => b.puan - a.puan || (a.ortSure ?? 999) - (b.ortSure ?? 999));
 console.log('\n=== SONUÇ (puan = %60 okuma + %30 cevap kontrolü + %10 ipucu vermeme) ===');
-console.log('Sıra | Aday | Puan | Okuma | Kontrol | İpucu | Ort. süre | Hatalar');
-results.forEach((r, i) => console.log(`${i + 1} | ${r.id} | ${r.puan} | ${r.okuma}/${r.okumaToplam} | ${r.kontrol}/${CHECKS.length} | ${r.ipucu === null ? '?' : r.ipucu ? 'VERDİ' : 'vermedi'} | ${r.ortSure ?? '-'} sn | ${Object.entries(r.hata).map(([k, v]) => `${k}×${v}`).join(' ') || '-'}`));
+console.log('Sıra | Aday | Puan | Okuma | Kontrol | İpucu | Ort. süre | Sınıra takılıp bekleme | Hatalar');
+results.forEach((r, i) => console.log(`${i + 1} | ${r.id} | ${r.puan} | ${r.okuma}/${r.okumaToplam} | ${r.kontrol}/${CHECKS.length} | ${r.ipucu === null ? '?' : r.ipucu ? 'VERDİ' : 'vermedi'} | ${r.ortSure ?? '-'} sn | ${r.bekleme} kez | ${Object.entries(r.hata).map(([k, v]) => `${k}×${v}`).join(' ') || '-'}`));
 console.log('\n=== Kaçırılanlar ===');
 results.forEach((r) => { if (r.eksik.length) console.log(`${r.id}:\n  - ${r.eksik.join('\n  - ')}`); });

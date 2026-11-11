@@ -67,7 +67,9 @@ export default async function handler(req, res) {
       slow: mode === 'read' || mode === 'correct',
       preferFast: mode === 'question' || mode === 'free' || mode === 'explain',
       // Sayfa okumada cevap geçerli JSON değilse (yarım kalmış) sıradaki modeli dene
-      validate: json ? isValidPage : null,
+      // Cevap kontrolünde karar etiketi yoksa (ya da gizli hesap kapanmamışsa) sıradaki modeli dene:
+      // etiketsiz bir cevap, gizli hesabı öğrenciye okutabilir.
+      validate: json ? isValidPage : (mode === 'check' ? isValidCheck : null),
       only,
     });
 
@@ -95,9 +97,11 @@ export default async function handler(req, res) {
     // Cevap kontrolünde model başa [DOĞRU]/[YANLIŞ] etiketi koyar: etiketi ayır, öğrenciye okutma
     let correct;
     if (mode === 'check') {
-      const tag = text.match(/^\s*\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/i);
-      if (tag) { correct = /^DO/i.test(tag[1]); text = text.slice(tag[0].length); }
-      text = text.replace(/\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/gi, '');
+      // Biçim: <hesap>gizli çözüm</hesap> [DOĞRU|YANLIŞ] öğrenciye söylenecekler
+      // Etiketten ÖNCEKİ her şey gizli hesaptır (doğru cevabı içerir!) → asla öğrenciye gitmez.
+      const tag = CHECK_TAG.exec(text);
+      if (tag) { correct = /^DO/i.test(tag[1]); text = text.slice(tag.index + tag[0].length); }
+      text = text.replace(/<hesap>[\s\S]*?<\/hesap>/gi, '').replace(/\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/gi, '').replace(/<\/?hesap>/gi, '').trim();
     }
     return send(res, 200, { reply: text, correct, model: result.model });
   } catch (err) {
@@ -133,6 +137,14 @@ async function readJson(req) {
   const chunks = [];
   for await (const c of req) chunks.push(c);
   return JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
+}
+
+const CHECK_TAG = /\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/i;
+function isValidCheck(t) {
+  const tag = CHECK_TAG.exec(t);
+  if (!tag) return false;
+  const after = t.slice(tag.index + tag[0].length);
+  return after.trim().length > 0 && !/<hesap>/i.test(after); // etiketten sonra öğrenciye söylenecek bir şey olmalı
 }
 
 function isValidPage(t) {
