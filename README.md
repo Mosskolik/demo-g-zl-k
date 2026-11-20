@@ -291,14 +291,31 @@ Bundan sonra `main` dalına gelen her değişiklik **otomatik** olarak yayınlan
 
 Uygulama tek bir yapay zekâ servisine bağlı değildir. Anahtarı eklenen her sağlayıcı sıraya girer; biri kotasını doldurursa, yavaşlarsa ya da hata verirse sıradaki devreye girer (`lib/providers/chain.js`).
 
-| Sağlayıcı | Vercel'deki değişken adı | Anahtar nereden alınır |
-|---|---|---|
-| Google Gemini | `GEMINI_API_KEY` | aistudio.google.com/apikey |
-| Groq | `GROQ_API_KEY` | console.groq.com/keys |
-| Mistral | `MISTRAL_API_KEY` | console.mistral.ai → API Keys |
-| NVIDIA NIM | `NVIDIA_API_KEY` | build.nvidia.com → Get API Key |
-| Cloudflare Workers AI | `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` | dash.cloudflare.com/profile/api-tokens ("Workers AI" şablonu) |
-| OpenRouter | `OPENROUTER_API_KEY` | openrouter.ai/keys |
+| Sağlayıcı | Vercel'deki değişken adı | Anahtar nereden alınır | Durum (21 Kasım 2026) |
+|---|---|---|---|
+| Google Gemini | `GEMINI_API_KEY` | aistudio.google.com/apikey | ✅ ekli (4 model) |
+| Groq | `GROQ_API_KEY` | console.groq.com/keys | ✅ ekli |
+| OpenRouter | `OPENROUTER_API_KEY` | openrouter.ai/keys | ✅ ekli |
+| Cloudflare Workers AI | `CLOUDFLARE_API_TOKEN` (hesap kimliği kodda hazır) | dash.cloudflare.com/profile/api-tokens ("Workers AI" şablonu) | ✅ ekli |
+| Mistral | `MISTRAL_API_KEY` | admin.mistral.ai → API Anahtarları | ⏳ eklenmedi (site arızalıydı) |
+| NVIDIA NIM | `NVIDIA_API_KEY` | build.nvidia.com → Get API Key | ⏳ eklenmedi (telefon doğrulaması) |
+
+> GitHub Models 30 Temmuz 2026'da kapatıldı; artık kullanılamaz.
+
+### Yarış sonucu (21 Kasım 2026, 4 gerçek Türkçe sayfa: 17 okuma + 4 cevap kontrolü + ipucu testi)
+
+| Sıra | Model | Puan | Okuma | Kontrol | Ort. süre | Not |
+|---|---|---|---|---|---|---|
+| 1 | gemini-3.1-flash-lite | 100 | 17/17 | 4/4 | 4,1 sn | |
+| 2 | gemini-3.5-flash | 100 | 17/17 | 4/4 | 7,5 sn | günde 20 istek |
+| 3 | gemini-3.5-flash-lite | 96 | 16/17 | 4/4 | 3,1 sn | |
+| 4 | groq qwen3.8-27b | 96 | 16/17 | 4/4 | 3,2 sn | dakikada 8.000 token |
+| 5 | openrouter nemotron-3.5-super-vl | 96 | 16/17 | 4/4 | 5,9 sn | günde ~50 istek |
+| 6 | gemini-3.6-flash | 83 | 17/17 | 3/4 | 6,6 sn | günlük hakkı çok az |
+| 7 | cloudflare mistral-small-3.1 | 82 | 12/17 | 4/4 | 9,3 sn | |
+| 8 | gemini-3-flash-preview | 47 | 2/17 | 4/4 | — | fotoğrafta zaman aşımı → çıkarıldı |
+
+Hiçbir model öğrenciye ipucu vermedi. Zincirdeki sıra bu sonuca göre ayarlandı (`lib/config.js` → `chain`).
 
 - Sıra `AI_CHAIN` ile, model adları `GROQ_MODELS` gibi değişkenlerle değiştirilir.
 - Devrede olanlar: `/api/health` ve `/api/models`. Bir sağlayıcının model adları: `/api/models?saglayici=groq`.
@@ -307,7 +324,7 @@ Uygulama tek bir yapay zekâ servisine bağlı değildir. Anahtarı eklenen her 
 ## 📊 Ücretsiz kota hakkında (Kasım 2026 ölçümü)
 
 - `gemini-3.5-flash` ücretsiz katmanda **günde yalnızca 20 istek** veriyor.
-- Her modelin kotası ayrı. Bir model dolunca uygulama otomatik olarak sıradaki modele geçer (`gemini-3.1-flash-lite`, sonra `gemini-3.5-flash-lite`).
+- Her modelin kotası ayrı. Bir model dolunca uygulama otomatik olarak zincirdeki sıradaki modele geçer (önce diğer Gemini modelleri, sonra Groq, OpenRouter, Cloudflare).
 - Günlük kota Türkiye saatiyle yaklaşık 11:00'de (yaz aylarında 10:00'da) yenilenir.
 - Kalan kotanı https://aistudio.google.com/usage sayfasından görebilirsin.
 
