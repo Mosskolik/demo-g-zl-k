@@ -335,8 +335,30 @@ public class MainActivity extends Activity {
                 endRec();
             });
         }
+        @JavascriptInterface public void vibrate(String json) { main.post(() -> vibrateNow(json)); }
         @JavascriptInterface public void retry() { main.post(MainActivity.this::retryLoad); }
         @JavascriptInterface public String appVersion() { return BuildConfigVersion.NAME; }
+    }
+
+    // Titreşim: sayfadan gelen desen (ör. 80 ya da [40,60,40]) → telefonun titreşim motoru
+    void vibrateNow(String json) {
+        try {
+            long[] timings;
+            String t = json == null ? "" : json.trim();
+            if (t.startsWith("[")) {
+                org.json.JSONArray a = new org.json.JSONArray(t);
+                timings = new long[a.length() + 1];
+                timings[0] = 0; // hemen başla
+                for (int i = 0; i < a.length(); i++) timings[i + 1] = Math.max(0, Math.min(2000, a.optLong(i)));
+            } else {
+                timings = new long[]{0, Math.max(0, Math.min(2000, Long.parseLong(t.isEmpty() ? "0" : t)))};
+            }
+            android.os.Vibrator v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+            if (v == null || !v.hasVibrator()) return;
+            if (timings.length < 2 || (timings.length == 2 && timings[1] == 0)) { v.cancel(); return; }
+            if (Build.VERSION.SDK_INT >= 26) v.vibrate(android.os.VibrationEffect.createWaveform(timings, -1));
+            else v.vibrate(timings, -1);
+        } catch (Exception ignored) { }
     }
 
     // ------------------------------------------------------------------

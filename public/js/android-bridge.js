@@ -78,14 +78,21 @@
   };
 
   function next() {
+    if (current) return; // biri zaten okunuyor; bitince sıradaki başlar
     current = queue.shift() || null;
     synth.pending = queue.length > 0;
     if (!current) { synth.speaking = false; return; }
     var u = current;
-    // Sessiz "kilit açma" okuması (iPhone için) → hemen bitti say
+    // Sessiz "kilit açma" okuması (iPhone için) → okumadan hemen bitti say.
+    // Bitene kadar "current" olarak kalır ki araya giren okumalar sırayı bozmasın.
     if (!u.text.trim() || u.volume === 0) {
-      current = null;
-      setTimeout(function () { fire(u, 'start'); fire(u, 'end'); next(); }, 0);
+      synth.speaking = true;
+      setTimeout(function () {
+        if (current !== u) return; // bu arada iptal edildi
+        current = null;
+        fire(u, 'start'); fire(u, 'end');
+        next();
+      }, 0);
       return;
     }
     synth.speaking = true;
@@ -157,6 +164,19 @@
   function define(name, value) {
     try { Object.defineProperty(window, name, { value: value, configurable: true, writable: true }); } catch (e) { window[name] = value; }
   }
+  // Titreşim: uygulama dokunmadan başladığı için WebView titreşimi engelleyebilir → telefonun kendi titreşimi
+  if (typeof A.vibrate === 'function') {
+    try {
+      Object.defineProperty(navigator, 'vibrate', {
+        configurable: true,
+        value: function (pattern) {
+          try { A.vibrate(JSON.stringify(pattern)); } catch (e) { return false; }
+          return true;
+        },
+      });
+    } catch (e) { /* yoksay */ }
+  }
+
   define('speechSynthesis', synth);
   define('SpeechSynthesisUtterance', Utterance);
   define('SpeechRecognition', Recognition);
