@@ -1,0 +1,50 @@
+plugins {
+    id 'com.android.application'
+}
+
+// İmza anahtarı (isteğe bağlı): ortam değişkenleriyle verilir, depoya KONMAZ.
+//   MATEMATIK_KEYSTORE, MATEMATIK_KEYSTORE_PASSWORD, MATEMATIK_KEY_ALIAS
+// Verilmezse APK, Android'in deneme (debug) anahtarıyla imzalanır.
+def ks = System.getenv('MATEMATIK_KEYSTORE')
+
+android {
+    namespace 'com.matematikasistani.app'
+    compileSdk 36
+
+    defaultConfig {
+        applicationId 'com.matematikasistani.app'
+        minSdk 24          // Android 7 ve üstü
+        targetSdk 36
+        versionCode 1
+        versionName '1.0'
+    }
+
+    signingConfigs {
+        if (ks) {
+            release {
+                storeFile file(ks)
+                storePassword System.getenv('MATEMATIK_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('MATEMATIK_KEY_ALIAS') ?: 'matematik'
+                keyPassword System.getenv('MATEMATIK_KEYSTORE_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig ks ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    // Yayın derlemesinde ek "lint" denetimini atla (derlemeyi hızlandırır, ek indirme gerektirmez)
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

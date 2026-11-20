@@ -97,8 +97,10 @@ speaker.onBroken = () => {
   warn.textContent = '⚠️ SESLİ OKUMA ÇALIŞMIYOR: Telefonda Türkçe ses yok. ' +
     'Ayarlar → Sistem → Diller ve giriş → Gelişmiş → Metin okuma çıkışı → ' +
     'Tercih edilen motor: "Google Konuşma Hizmetleri" → ⚙️ → Ses verilerini yükle → Türkçe. ' +
-    'Sonra Chrome\'u tamamen kapatıp yeniden aç.';
+    (window.__androidApp ? 'Sonra bu uygulamayı kapatıp yeniden aç.' : 'Sonra Chrome\'u tamamen kapatıp yeniden aç.');
   warn.hidden = false;
+  // Android uygulamasında Türkçe ses verisi yükleme ekranını doğrudan aç
+  if (window.__androidApp) { try { window.MatematikAndroid.openTtsSettings(); } catch { /* yoksay */ } }
 };
 
 let beepBeforeListen = true; // asistan konuştuktan sonra dinlemeye geçerken kısa bip
@@ -650,7 +652,7 @@ async function listenLoop() {
         diag('dinleme-dongu-hata', { e: err.code, sayi: fails + 1 });
         if (err.code === 'not-allowed' || err.code === 'service-not-allowed') {
           el.autoListen.checked = false; saveSettings(); fb.error();
-          await speaker.say('Mikrofon izni verilmedi. Tarayıcı ayarlarından mikrofon iznini aç. O zamana kadar ekrandaki butonlar ve yazı kutusu kullanılabilir.');
+          await speaker.say((window.__androidApp ? 'Mikrofon izni verilmedi. Telefonun Ayarlar, Uygulamalar, Matematik Asistanı, İzinler bölümünden mikrofon iznini aç.' : 'Mikrofon izni verilmedi. Tarayıcı ayarlarından mikrofon iznini aç.') + ' O zamana kadar ekrandaki butonlar ve yazı kutusu kullanılabilir.');
           break;
         }
         if (++fails >= 5) {
@@ -732,3 +734,6 @@ window.addEventListener('online', () => notice('İnternet bağlantısı geri gel
 
 // Uygulama kodu sorunsuz yüklendi (index.html'deki açılma koruması bunu kontrol eder)
 window.__appReady = true;
+
+// Android uygulamasında dokunma beklemeden başla (görme engelli öğrenci başlangıç ekranını bulmak zorunda kalmasın)
+if (window.__androidApp) setTimeout(() => el.start.click(), 300);
