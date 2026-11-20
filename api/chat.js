@@ -126,7 +126,9 @@ function fixSpoken(t) {
 }
 
 function send(res, status, obj) {
-  res.statusCode = status;
+  // Cloudflare aktarıcısı 502/504 cevaplarını kendi HTML hata sayfasıyla değiştiriyor ve hata
+  // kodu (READ_FAILED, TIMEOUT…) kayboluyor → bunları 500 olarak gönder (kod gövdede kalır).
+  res.statusCode = status === 502 || status === 504 ? 500 : status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
   res.end(JSON.stringify(obj));
