@@ -80,6 +80,9 @@ public class MainActivity extends Activity {
     PermissionRequest pendingWebPermission;
     ValueCallback<Uri[]> fileCallback;
 
+    // Uygulama arka plandayken konuşma/dinleme yapılmaz
+    boolean paused = false;
+
     // İnternet yoksa
     int offlineCount = 0;
     final Runnable retryRunnable = this::retryLoad;
@@ -177,7 +180,8 @@ public class MainActivity extends Activity {
                 @Override public void onDone(String id) { emit(obj("t", "tts", "k", "end", "id", id)); }
                 @Override public void onError(String id) { emit(obj("t", "tts", "k", "error", "id", id, "error", "synthesis-failed")); }
                 @Override public void onError(String id, int code) { emit(obj("t", "tts", "k", "error", "id", id, "error", "synthesis-failed")); }
-                @Override public void onStop(String id, boolean interrupted) { /* sayfa zaten iptal etti */ }
+                // Okuma yarıda kesildi (ör. uygulamadan çıkıldı) → sayfa beklemesin, sıradakine geçsin
+                @Override public void onStop(String id, boolean interrupted) { emit(obj("t", "tts", "k", "error", "id", id, "error", "interrupted")); }
             });
         }
         ttsReady = true;
@@ -197,6 +201,7 @@ public class MainActivity extends Activity {
     }
 
     void speakNow(String id, String text, float rate) {
+        if (paused) { emit(obj("t", "tts", "k", "error", "id", id, "error", "interrupted")); return; }
         if (!ttsReady) { pendingSpeak.add(new String[]{id, text, String.valueOf(rate)}); return; }
         if (tts == null || !ttsTurkish) {
             emit(obj("t", "tts", "k", "error", "id", id, "error", "language-unavailable"));
@@ -233,6 +238,7 @@ public class MainActivity extends Activity {
             emit(obj("t", "rec", "k", "error", "id", prev, "error", "aborted"));
             emit(obj("t", "rec", "k", "end", "id", prev));
         }
+        if (paused) { failRec(id, "aborted"); return; } // arka planda mikrofon açılmaz
         if (!has(Manifest.permission.RECORD_AUDIO)) { failRec(id, "not-allowed"); return; }
         if (!SpeechRecognizer.isRecognitionAvailable(this)) { failRec(id, "service-not-allowed"); return; }
         if (recognizer == null) {
@@ -470,6 +476,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        paused = true;
         // Uygulamadan çıkınca konuşmayı ve dinlemeyi durdur (gizlilik)
         if (tts != null) tts.stop();
         if (recId != null && recognizer != null) {
@@ -484,6 +491,7 @@ public class MainActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        paused = false;
         if (web != null) web.onResume();
     }
 
