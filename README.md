@@ -66,6 +66,37 @@ Android'de mikrofon her açıldığında telefon kısa bir ses çıkarabilir. Bu
 
 ---
 
+## 🤖 Android uygulaması (.apk)
+
+**İndirme sayfası:** https://app.matematik-asistani.workers.dev/indir/ (telefondan aç → sarı butona dokun → kur)
+
+- Uygulama, internetteki web uygulamasını tam ekran açar. Bu yüzden web'de yapılan her düzeltme uygulamaya **anında** gelir; APK'yı yeniden kurmak gerekmez.
+- Tarayıcıdan farklı olarak **telefonun kendi** özelliklerini kullanır:
+  - **Sesli okuma:** Android'in Türkçe sesi (TextToSpeech). Varsayılan ses motorunda Türkçe yoksa Google'ın motoruna geçer. Hiç Türkçe ses yoksa "Türkçe ses verisini yükle" ekranını kendisi açar.
+  - **Konuşma tanıma:** Android'in konuşma tanıması (tr-TR).
+  - **Titreşim, kamera, mikrofon, galeri:** telefonun kendi izinleriyle.
+- Açılınca **dokunmadan** konuşmaya başlar (başlangıç ekranını bulmak gerekmez). Ekran kararmaz.
+- İnternet yoksa "İnternet bağlantısı yok" der ve bağlantı gelince kendiliğinden açılır.
+- Boyutu yaklaşık 40 KB. Android 7 ve üstü.
+
+**Nasıl çalışıyor?** `android/` klasöründeki Java kodu sayfayı bir WebView'da açar ve `window.MatematikAndroid` köprüsünü verir.
+`public/js/android-bridge.js` bu köprüyü kullanarak tarayıcının ses özelliklerini (speechSynthesis, SpeechRecognition) taklit eder. Böylece uygulamanın geri kalanı hiç değişmeden çalışır. Normal tarayıcıda bu dosya hiçbir şey yapmaz.
+
+**İleride:** Meta Ray-Ban gözlük SDK'sı (Wearables Device Access Toolkit) ve telefonda çalışan model bu Android uygulamasına eklenecek.
+
+### APK'yı yeniden derlemek (geliştirici için)
+Gerekenler: JDK 17+, Android SDK (platform 36, build-tools 36), Gradle 8.14.
+
+```bash
+cd android
+echo "sdk.dir=/ANDROID/SDK/YOLU" > local.properties
+gradle assembleRelease
+```
+
+Çıkan dosya: `android/app/build/outputs/apk/release/app-release.apk` → `public/indir/matematik-asistani.apk` olarak kopyalanıp yayınlanır.
+Kendi imza anahtarınla imzalamak için `MATEMATIK_KEYSTORE`, `MATEMATIK_KEYSTORE_PASSWORD`, `MATEMATIK_KEY_ALIAS` ortam değişkenlerini ver (anahtar dosyası depoya **konmaz**). Verilmezse deneme (debug) anahtarıyla imzalanır.
+> Not: Telefona kurulu uygulamayı güncellemek için yeni APK'nın **aynı anahtarla** imzalanmış olması gerekir. Anahtar değişirse önce eski uygulamayı kaldır.
+
 ## 🗂️ Klasör yapısı
 
 ```
@@ -79,20 +110,25 @@ public/                  ← Telefonda açılan sayfa
   js/quality.js          ← Karanlık/bulanık fotoğraf kontrolü (telefonda)
   js/feedback.js         ← Titreşim ve bip sesleri
   js/api.js              ← Sunucuya istek; 429'da bekleyip otomatik yeniden dener
+  js/android-bridge.js   ← Android uygulamasında telefonun kendi ses/tanıma/titreşimini bağlar
+  indir/                 ← Android uygulamasının indirme sayfası ve .apk dosyası
+android/                 ← Android uygulaması (Java): WebView + yerel ses köprüsü
 api/
   chat.js                ← Vercel sunucu fonksiyonu (API anahtarı SADECE burada)
   health.js              ← Ayar kontrolü: /api/health
 lib/
   config.js              ← ⚙️ Model adı ve sağlayıcı seçimi
   prompts.js             ← Yapay zekânın öğretmen talimatları
-  providers/             ← AIProvider arayüzü: gemini.js, ollama.js (iskelet), mock.js (deneme)
+  providers/             ← AIProvider arayüzü: gemini.js, openaiCompat.js (Groq, Cloudflare, OpenRouter…),
+                           chain.js (hepsini sırayla/yarışarak dener), ollama.js (iskelet), mock.js (deneme)
 scripts/
   dev-server.js          ← Yerel test sunucusu
   test-api.js            ← Otomatik testler
+  yaris.js               ← Bütün modelleri gerçek sayfalarla yarıştırır (npm run yaris)
 ```
 
 **Model değiştirmek:** Vercel'de `GEMINI_MODEL` ortam değişkenini ekle (ör. `gemini-3.1-flash-lite`) veya `lib/config.js` dosyasını düzenle.
-Varsayılan model `gemini-3.5-flash`. Bu model kullanılamazsa, 30 saniyede cevap vermezse ya da ücretsiz kotası yoksa uygulama sırayla `gemini-3.1-flash-lite` ve `gemini-3.5-flash-lite` modellerini dener.
+Varsayılan model `gemini-3.5-flash`. Bu model kullanılamazsa, yavaşsa ya da ücretsiz kotası dolduysa uygulama zincirdeki diğer modelleri dener (aşağıdaki "Birden fazla ücretsiz sağlayıcı" bölümüne bak).
 API anahtarının erişebildiği modellerin listesi: `https://senin-linkin.vercel.app/api/models`.
 Google modelleri zamanla kaldırıyor. Hata alırsan önce bu listeye bak.
 

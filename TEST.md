@@ -8,6 +8,21 @@ Sonunda notlarını bana gönder.
 
 ---
 
+## A. Android uygulaması (isteğe bağlı, Android telefonda)
+
+| # | Yap | Duyman / görmen gereken |
+|---|---|---|
+| A.1 | Telefonda https://app.matematik-asistani.workers.dev/indir/ adresini aç, sarı **Uygulamayı indir** butonuna dokun. | Dosya iner (yaklaşık 40 KB). |
+| A.2 | İnen dosyaya dokun. "Bilinmeyen kaynak" izni isterse **Ayarlar → izin ver**, geri dön, **Yükle**. Play Koruma uyarırsa **Yine de yükle**. | "Uygulama yüklendi". |
+| A.3 | **Matematik Asistanı** uygulamasını aç. Kamera ve mikrofon iznini **ver**. | Ekrana dokunmadan "Merhaba! Ben matematik asistanınım…" der. |
+| A.4 | Ses Türkçe değilse ya da hiç ses yoksa: | Ekranın üstünde sarı/kırmızı uyarı çıkar ve Türkçe ses yükleme ekranı açılır. Türkçe'yi indir, uygulamayı kapatıp aç. |
+| A.5 | Aşağıdaki 1–5 numaralı adımları **uygulamanın içinde** yap. | Web sürümüyle aynı davranmalı. |
+| A.6 | Uygulama açıkken **internetini kapat**, ekrana dokun. Sonra interneti aç. | "İnternet bağlantısı yok…" der; bağlantı gelince kendiliğinden döner. |
+
+> Uygulama web sürümünü kullandığı için her düzeltme anında gelir, yeniden kurmana gerek yok.
+
+---
+
 ## 0. Hazırlık (2 dakika)
 
 | # | Yap | Kontrol |
