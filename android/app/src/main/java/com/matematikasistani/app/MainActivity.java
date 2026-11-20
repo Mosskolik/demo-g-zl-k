@@ -299,8 +299,8 @@ public class MainActivity extends Activity {
                     // Takılmış tanıyıcıyı yeniden oluştur
                     main.post(() -> { if (recognizer != null && recId == null) { recognizer.destroy(); recognizer = null; } });
                     break;
-                case 12: // ERROR_LANGUAGE_NOT_SUPPORTED (Android 12+)
-                case 13: e = "language-not-supported"; break; // ERROR_LANGUAGE_UNAVAILABLE
+                case SpeechRecognizer.ERROR_LANGUAGE_NOT_SUPPORTED: // Android 12+
+                case SpeechRecognizer.ERROR_LANGUAGE_UNAVAILABLE: e = "language-not-supported"; break;
                 default: e = "network"; // ağ, sunucu, çok fazla istek…
             }
             emit(obj("t", "rec", "k", "error", "id", recId, "error", e, "message", "kod " + code));
@@ -467,12 +467,6 @@ public class MainActivity extends Activity {
     // ------------------------------------------------------------------
     // Yaşam döngüsü
     // ------------------------------------------------------------------
-    @Override
-    public void onBackPressed() {
-        if (web != null && web.canGoBack()) web.goBack();
-        else super.onBackPressed();
-    }
-
     @Override
     protected void onPause() {
         super.onPause();
