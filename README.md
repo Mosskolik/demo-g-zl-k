@@ -64,7 +64,8 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **ipucu ver** / **nasıl başlayayım** | İpucu vermez; "Bilinmeyen ne? Hangi bilgiler verilmiş?" gibi yönlendirmeyen sorular sorar |
 | **sadece oku** / **açıklamayı aç** | Soruları açıklamasız okur (deneyimli öğrenci için) / yine açıklar |
 | **hızlı oku** | Okuma hızını artırır (3 kata kadar; görme engelli dinleyiciler çok hızlı sesi takip edebiliyor) |
-| **yardım** | Komutları sesli sayar |
+| **yardım** (ya da "yardım edin", "bana yardım et", "komutlar neler") | O an işe yarayan komutları kısaca söyler (sayfa yokken / soru açıkken / cevap beklenirken farklı) |
+| **tüm komutlar** | Bütün komutları sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 
 **Kesik fotoğraf:** Yarım görünen bir soru asla okunmaz ve çözülmez. Asistan o soru için telefonun nasıl kaydırılacağını söyler ("Telefonu biraz sağa kaydır", "kendine doğru çek"). Tam görünen sorular her zaman okunur.

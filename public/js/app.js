@@ -488,6 +488,23 @@ async function callAI(payload, waitingText = 'Düşünüyorum.') {
 }
 
 /** Sayfa bağlamında sohbet modları (explain, question, check, solve, free) */
+/** Duruma göre KISA yardım (17 komutu birden saymak yerine o an işe yarayanlar; hepsi için "tüm komutlar") */
+function contextHelp() {
+  const all = ' Bütün komutları duymak istersen tüm komutlar de.';
+  if (!state.page) {
+    return 'Matematik sayfasını telefonun altına koy, sonra ekrana dokun ya da çek de; fotoğrafını çekerim. ' +
+      'Galeriden görsel de ekleyebilirsin. Ben konuşurken susmamı istersen ekrana dokun ya da dur de.' + all;
+  }
+  if (state.page.tur === 'konu' && !state.questions?.length) {
+    return 'Konuyu anlatmaya devam etmem için devam de, durmam için hayır de. Tekrar dinlemek için tekrar et de. ' +
+      'Merak ettiğin bir şeyi doğrudan sorabilirsin. Yeni sayfa için yeni soru de.' + all;
+  }
+  if (state.phase === 'awaitAnswer') return 'Seni dinliyorum. Cevabını söyle; örneğin B şıkkı ya da on üç.' + all;
+  return 'Bu soruda şunları diyebilirsin. Cevap vermek için hazırım de, sonra cevabını söyle. ' +
+    'Şıkları oku, soruyu tekrar oku, verilenler neydi, ne isteniyor. Anlamadım ya da ipucu ver. ' +
+    'Çözümü dinlemek için çözemedim. Sorular arasında gezmek için sıradaki soru ya da önceki soru.' + all;
+}
+
 /** "şıkları oku", "C şıkkı neydi", "soruyu tekrar oku", "verilenler neydi", "ne isteniyor" */
 async function readQuestionPart(kind, letter) {
   const q = state.questions?.[state.qIndex];
@@ -642,6 +659,8 @@ async function handleInput(raw, { voice = false } = {}) {
       setRate(Math.min(3.0, speaker.rate + 0.25)); // görme engelli dinleyiciler ortalama ~2 kat, deneyimliler ~3 kat hızı takip ediyor (Bragg 2018)
       return notice('Bundan sonra daha hızlı okuyacağım.');
     case 'help':
+      return reply(contextHelp());
+    case 'helpAll':
       return reply(HELP_TEXT);
     case 'newq':
       state.presentToken++; state.busy = false;

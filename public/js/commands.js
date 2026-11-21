@@ -37,7 +37,7 @@ export function normalize(text) {
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
  *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked | hint | explainOff | explainOn |
- *         capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *         help | helpAll | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -93,7 +93,12 @@ export function parseCommand(raw) {
   if (only('hızlı oku', 'hızlı', 'daha hızlı', 'hızlı konuş', 'hızlan')) return { type: 'fast' };
   if (first.startsWith('çöz') && words.length <= 4) return { type: 'solve' };       // çöz, çözer misin, çözümü söyle
   if (only('yeni soru', 'yeni', 'başka soru', 'yeni sayfa', 'baştan başla', 'sıfırla')) return { type: 'newq' };
-  if (only('yardım', 'komutlar', 'ne diyebilirim', 'yardım et')) return { type: 'help' };
+  // YARDIM: "yardım", "yardım edin", "bana yardım et", "yardım lütfen", "komutlar neler", "ne diyebilirim"…
+  if (/^(tüm|bütün) komutlar|^komutların (hepsi|hepsini)|^(tüm|bütün) komutları (say|söyle|oku)/.test(t)) return { type: 'helpAll' };
+  if ((words.length <= 5 && /^(bana |lütfen |hocam )?yardım/.test(t)) ||
+      (words.length <= 6 && /(komutlar|komutları|ne diyebilirim|ne söyleyebilirim|neler diyebilirim|nasıl kullan|ne yapabilirim)/.test(t))) {
+    return { type: 'help' };
+  }
   if (only('devam', 'devam et', 'devam edebilirsin', 'sonraki', 'devam edin')) return { type: 'continue' };
 
   // Kesik uyarısına rağmen devam (sadece tam görünen sorular okunur)
