@@ -116,6 +116,14 @@ export default async function handler(req, res) {
       if (leak.removed.length) console.log(`[aciklama] şık değeri sızıntısı silindi: ${leak.removed.length} model=${result.model}`);
       text = leak.kept;
     }
+    // Serbest soruda da soruda verilmeyen şık değeri (olası cevap) söylenmesin — çözüm istenmediği sürece
+    if (mode === 'free') {
+      const leak = stripOptionLeaks(text, pageText);
+      if (leak.removed.length) {
+        console.log(`[serbest] şık değeri sızıntısı silindi: ${leak.removed.length} model=${result.model}`);
+        text = leak.kept || 'Bunu şimdi söylersem bu sorunun cevabını vermiş olurum. Çözümü dinlemek istersen çözemedim de.';
+      }
+    }
     return send(res, 200, { reply: text, correct, model: result.model });
   } catch (err) {
     if (err instanceof ProviderError) {

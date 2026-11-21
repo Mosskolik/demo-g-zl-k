@@ -136,7 +136,7 @@ export const HELP_TEXT =
   'Evet ya da devam: konu anlatımında devam ederim. ' +
   'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
   'Sıradaki soru, önceki soru ya da üçüncü soru: sayfadaki sorular arasında gezersin. ' +
-  'Anlamadım: soruyu daha basit anlatırım. ' +
+  'Anlamadım: soruyu daha kısa parçalarla ve yavaşça yeniden anlatırım. ' +
   'Soruyu tekrar oku: şıklar olmadan sadece soruyu okurum. Şıkları oku: şıkları yavaşça tek tek okurum. ' +
   'C şıkkı neydi: sadece o şıkkı okurum. Verilenler neydi: verilenleri ve şekli tekrar anlatırım. Ne isteniyor: senden isteneni söylerim. ' +
   'İpucu ver: ipucu vermem ama düşünmene yardım eden sorular sorarım. ' +
