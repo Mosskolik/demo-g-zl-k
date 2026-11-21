@@ -66,6 +66,9 @@ export default async function handler(req, res) {
       // Tam sayfa fotoğrafını okumak daha uzun sürebilir
       slow: mode === 'read' || mode === 'correct',
       preferFast: mode === 'question' || mode === 'free' || mode === 'explain',
+      // Soru açıklamasında soruyu birebir doğru aktarmak önemli: 21 Kasım testinde Gemini dışındaki modeller
+      // soruyu yanlış aktardı (ör. "küpkök kırk dokuz") → önce bütün Gemini modelleri denensin
+      preferProvider: mode === 'question' ? 'gemini' : undefined,
       // Sayfa okumada cevap geçerli JSON değilse (yarım kalmış) sıradaki modeli dene
       // Cevap kontrolünde karar etiketi yoksa (ya da gizli hesap kapanmamışsa) sıradaki modeli dene:
       // etiketsiz bir cevap, gizli hesabı öğrenciye okutabilir.

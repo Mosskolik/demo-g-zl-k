@@ -69,6 +69,8 @@ try {
   const chain3 = new ChainProvider(cfg3);
   assert.deepEqual(chain3.candidates(req).map((c) => c.id), ['gemini:guclu', 'groq:q1', 'gemini:lite']);
   assert.deepEqual(chain3.candidates({ ...req, preferFast: true }).map((c) => c.id), ['groq:q1', 'gemini:lite', 'gemini:guclu']);
+  // Soru açıklamasında Gemini önce (soruyu birebir doğru aktarsın); güçlü Gemini, diğer Gemini'lerden sonra ama başkalarından önce
+  assert.deepEqual(chain3.candidates({ ...req, preferFast: true, preferProvider: 'gemini' }).map((c) => c.id), ['gemini:lite', 'gemini:guclu', 'groq:q1']);
 
   // 7) Hiç anahtar yoksa NO_KEY
   const none = new ChainProvider({ gemini: { ...cfg.gemini, apiKey: '' }, extra: {}, chain: ['gemini'] });

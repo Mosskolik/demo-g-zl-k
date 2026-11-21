@@ -441,6 +441,11 @@ async function talk(mode, message) {
   if (!res) return;
   state.history.push({ role: 'user', text: message }, { role: 'model', text: res.reply });
   let text = res.reply;
+  // Açıklamanın tamamı ipucu sayılıp silindiyse soruyu bir kez daha oku (sessiz kalma)
+  if (!text && mode === 'question') {
+    const q = state.questions?.[state.qIndex];
+    text = q ? `Soruyu bir kez daha okuyorum. ${String(q.okunus || '').replace(LEADING_NO, '')}` : 'Bu soruyu sana daha fazla açıklayamıyorum.';
+  }
   // Doğru cevaptan veya çözümden sonra, sayfada başka soru varsa nasıl geçileceğini söyle
   // Doğruluğu model [DOĞRU]/[YANLIŞ] etiketiyle bildirir (sunucu ayırır); cümleden tahmin YAPMIYORUZ
   const correct = mode === 'check' && res.correct === true;
@@ -580,7 +585,8 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'explainAgain':
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       if (state.phase === 'awaitAnswer') state.phase = 'question';
-      return talk('free', 'Soruyu anlamadım. Bana daha basit ve daha yavaş anlatır mısın? Ama ipucu verme, çözüm yolu söyleme.');
+      // Soru açıklama moduna gider: sunucudaki ipucu filtresi burada da çalışır (serbest mod çözmeye başlayabilir)
+      return talk('question', 'Soruyu anlamadım. Bana daha basit ve daha yavaş anlatır mısın?');
     case 'misread':
       // "yanlış okudun, x küp olacak" → düzelt; sadece "yanlış okudun" → düzeltmeyi sor
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim.');
