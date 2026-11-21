@@ -185,12 +185,45 @@ camInput.addEventListener('change', async () => {
 
 el.file.addEventListener('change', async () => {
   const f = el.file.files?.[0]; el.file.value = '';
+  await useImageFile(f);
+});
+
+async function useImageFile(f) {
   if (!f) return;
+  if (f.type && !f.type.startsWith('image/')) { fb.error(); return reply('Bu bir görsel dosyası değil. Fotoğraf veya resim dosyası seç.'); }
+  if (!el.start.hidden) el.start.click(); // başlangıç ekranındayken bırakıldıysa önce uygulamayı aç
   try {
     await processImage(await files.captureFile(f), { strict: false });
   } catch {
     fb.error(); await reply('Bu dosyayı açamadım. Başka bir görsel dene.');
   }
+}
+
+// ---------- Bilgisayardan kullanım ----------
+// Fare/klavye ile kullanılan cihazda buton "Bilgisayardan görsel yükle" olur (tıklayınca dosya seçme penceresi açılır).
+// Ayrıca görsel sayfaya SÜRÜKLE-BIRAK ile ya da kopyalanıp Ctrl+V ile YAPIŞTIRILARAK da eklenebilir.
+const isDesktop = window.matchMedia?.('(hover: hover) and (pointer: fine)').matches && !('ontouchstart' in window);
+if (isDesktop) {
+  $('galleryLabel').textContent = '💻 Bilgisayardan görsel yükle (ya da sürükle-bırak, Ctrl+V)';
+  el.file.setAttribute('aria-label', 'Bilgisayardan görsel yükle');
+}
+let dragDepth = 0;
+const hasFiles = (e) => [...(e.dataTransfer?.types || [])].includes('Files');
+window.addEventListener('dragenter', (e) => { if (!hasFiles(e)) return; e.preventDefault(); dragDepth++; $('dropZone').hidden = false; });
+window.addEventListener('dragover', (e) => { if (hasFiles(e)) e.preventDefault(); });
+window.addEventListener('dragleave', () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('dropZone').hidden = true; });
+window.addEventListener('drop', (e) => {
+  if (!hasFiles(e)) return;
+  e.preventDefault(); dragDepth = 0; $('dropZone').hidden = true;
+  const f = [...e.dataTransfer.files].find((x) => x.type.startsWith('image/')) || e.dataTransfer.files[0];
+  useImageFile(f);
+});
+window.addEventListener('paste', (e) => {
+  if (document.activeElement === el.input) return; // yazı kutusuna yapıştırılan metne karışma
+  const item = [...(e.clipboardData?.items || [])].find((x) => x.type.startsWith('image/'));
+  if (!item) return;
+  e.preventDefault();
+  useImageFile(item.getAsFile());
 });
 
 /**

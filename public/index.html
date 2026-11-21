@@ -35,9 +35,11 @@
       <p id="status" class="status" role="status" aria-live="polite">Hazır</p>
       <!-- Prototip için: kamera yerine galeriden görsel ekleme butonu (ekranın en altında) -->
       <label class="gallery-btn">
-        🖼️ Galeriden görsel ekle
+        <span id="galleryLabel">🖼️ Galeriden görsel ekle</span>
         <input id="fileInput" type="file" accept="image/*" aria-label="Galeriden görsel ekle">
       </label>
+      <!-- Bilgisayarda: görseli sayfaya sürükleyip bırakınca görünen katman -->
+      <div id="dropZone" class="drop-zone" hidden aria-hidden="true">Görseli buraya bırak</div>
     </div>
 
     <p class="helper-title">Aşağısı gören yardımcılar (öğretmen, aile) içindir:</p>
