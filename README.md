@@ -28,7 +28,11 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 4. Sayfanın türüne göre:
    - **Konu anlatımı sayfası:** Asistan hemen konuyu adım adım anlatmaya başlar ve ara ara "Devam edeyim mi?" diye sorar.
      Devam etmesi için **"evet"** ya da **"devam"** de, durması için **"hayır"** de.
-   - **Soru sayfası:** Asistan soruyu **çözüm yolu veya ipucu vermeden** okur ve "Senden istenen: …" diye ne istendiğini söyler.
+   - **Soru sayfası:** Asistan soruyu okur, sonra **çözüm yolu veya ipucu vermeden** öğrencinin zihninde canlandırabileceği şekilde anlatır:
+     önce genel bakış ("Bu soruda bir dik üçgen ve iki kenar uzunluğu var"), sonra şekil ya da ifadenin yapısı parça parça
+     ("Birinci parça: üçte iki. İkinci parça: altıda bir."), sonra "Verilenler şunlar" ve "Senden istenen". Yöntemi, araştırma kaynaklarıyla birlikte
+     [docs/arastirma/Gorme engellilere soru anlatimi.md](docs/arastirma/Gorme%20engellilere%20soru%20anlatimi.md) dosyasında anlattım.
+     Model kurala uymazsa sunucudaki **ipucu filtresi** çözüm yolu, işlem tarifi, formül ya da cevap içeren cümleyi öğrenciye okumadan siler.
      Öğrenci istediği kadar düşünür. Hazır olunca **"hazırım"** der ve ardından cevabını söyler.
      Doğruysa asistan tebrik eder. Yanlışsa cevabı söylemeden tekrar düşünmeye teşvik eder.
    - Öğrenci **"çözemedim"**, **"cevabı söyle"** ya da **"bilmiyorum"** derse asistan soruyu adım adım çözer ve cevabı açıklar.
@@ -50,6 +54,11 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **sıradaki soru / önceki soru** | Sayfadaki sorular arasında gezer |
 | **yedinci soru** (sayfadaki numara) | O numaralı soruya gider |
 | **anlamadım** | Soruyu daha basit anlatır (ipucu vermeden) |
+| **şıkları oku** / **şıklar neydi** | Şıkları yavaşça tek tek okur (yapay zekâya gitmez) |
+| **C şıkkı neydi** | Sadece o şıkkı okur |
+| **soruyu tekrar oku** | Şıklar olmadan sadece soruyu okur |
+| **verilenler neydi** / **şekli tekrar anlat** | Şekli, verilenleri ve isteneni tekrar anlatır |
+| **ne isteniyor** | Sadece "Senden istenen: …" cümlesini söyler |
 | **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 
