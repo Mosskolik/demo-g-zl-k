@@ -33,6 +33,8 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
      ("Birinci parça: üçte iki. İkinci parça: altıda bir."), sonra "Verilenler şunlar" ve "Senden istenen". Yöntemi, araştırma kaynaklarıyla birlikte
      [docs/arastirma/Gorme engellilere soru anlatimi.md](docs/arastirma/Gorme%20engellilere%20soru%20anlatimi.md) dosyasında anlattım.
      Model kurala uymazsa sunucudaki **ipucu filtresi** çözüm yolu, işlem tarifi, formül ya da cevap içeren cümleyi öğrenciye okumadan siler.
+     Ayrıca **şık değeri filtresi**: soruda verilmeyen bir şık değeri ("on üç") açıklamada geçerse o cümle de silinir (doğru cevap şıklardan biri olduğu için).
+     Derin araştırma raporları: `docs/arastirma/reports/`.
      Öğrenci istediği kadar düşünür. Hazır olunca **"hazırım"** der ve ardından cevabını söyler.
      Doğruysa asistan tebrik eder. Yanlışsa cevabı söylemeden tekrar düşünmeye teşvik eder.
    - Öğrenci **"çözemedim"**, **"cevabı söyle"** ya da **"bilmiyorum"** derse asistan soruyu adım adım çözer ve cevabı açıklar.
@@ -59,6 +61,9 @@ Asistan konuşurken mikrofon kapalıdır. Susturmak için ekranın herhangi bir 
 | **soruyu tekrar oku** | Şıklar olmadan sadece soruyu okur |
 | **verilenler neydi** / **şekli tekrar anlat** | Şekli, verilenleri ve isteneni tekrar anlatır |
 | **ne isteniyor** | Sadece "Senden istenen: …" cümlesini söyler |
+| **ipucu ver** / **nasıl başlayayım** | İpucu vermez; "Bilinmeyen ne? Hangi bilgiler verilmiş?" gibi yönlendirmeyen sorular sorar |
+| **sadece oku** / **açıklamayı aç** | Soruları açıklamasız okur (deneyimli öğrenci için) / yine açıklar |
+| **hızlı oku** | Okuma hızını artırır (3 kata kadar; görme engelli dinleyiciler çok hızlı sesi takip edebiliyor) |
 | **yardım** | Komutları sesli sayar |
 | *başka her şey* | Serbest soru olarak cevaplanır. Konuşma geçmişi korunur |
 

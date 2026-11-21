@@ -63,6 +63,7 @@ Sonra sayfayı yenile.
 | 2.2 | Dinle. | "Bu bir soru." → soru → şıklar **"A şıkkı, B şıkkı…"** → "Bu soruyu sana açıklayayım" → genel bakış, şekil/ifade parça parça → "Verilenler şunlar" → "Senden istenen: …" → "Hazır olduğunda hazırım de…" |
 | 2.3 | Kontrol et: Soruyu **ipucu vermeden** mi okudu? Matematiği **Türkçe** mi söyledi ("x kare", "dörtte üç", "parantez aç")? | Not al. |
 | 2.3b | **"şıkları oku"** de. Sonra **"C şıkkı neydi"** de. Sonra **"soruyu tekrar oku"**, **"verilenler neydi"** ve **"ne isteniyor"** de. | Şıkları tek tek yavaşça okumalı; sadece C şıkkını okumalı; şıklar olmadan soruyu okumalı; verilenleri tekrar anlatmalı; "Senden istenen: …" demeli. Hiçbirinde ipucu olmamalı. |
+| 2.3c | **"ipucu ver"** de. | İpucu vermemeli; "Bilinmeyen ne? Hangi bilgiler verilmiş?…" diye sormalı. |
 | 2.4 | Bip sesinden sonra **"hazırım"** de. | "Tamam, seni dinliyorum. Cevabını söyle." |
 | 2.5 | Bilerek **yanlış** bir cevap söyle. Örneğin **"yedi"**. | "Bu cevap doğru değil, ama vazgeçme…" **Doğru cevabı ve ipucunu söylememeli.** |
 | 2.6 | **"hazırım"** de, sonra **doğru cevabı** söyle. | Tebrik etmeli. |
