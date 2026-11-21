@@ -36,7 +36,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked |
+ *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked | hint |
  *         capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
@@ -74,6 +74,8 @@ export function parseCommand(raw) {
       /^(şekli|açıklamayı|şekli bir daha|açıklamayı bir daha)( tekrar)? (anlat|açıkla|oku|söyle|tekrar et)$/.test(t)) {
     return { type: 'givens' };
   }
+  // "ipucu ver", "nasıl başlayayım" → ipucu YOK; yönlendirmeyen düşünme soruları (Pólya: soruyu anlama aşaması)
+  if (/^(bir )?(ipucu|ipucu ver|ipucu verir misin|ipucu verebilir misin|bana ipucu ver|ipucu lütfen|küçük bir ipucu ver|nasıl başlayayım|nereden başlayayım|nasıl başlarım|nereden başlarım)$/.test(t)) return { type: 'hint' };
   // "ne isteniyor", "soru ne istiyor", "benden ne isteniyor"
   if (/^(soru |benden |sorudan )?(ne isteniyor|ne istiyor|ne istenmiş|istenen ne|istenen neydi|neyi bulacağım|neyi bulmam gerekiyor|ne bulmam gerekiyor)$/.test(t)) return { type: 'asked' };
 
@@ -134,6 +136,7 @@ export const HELP_TEXT =
   'Anlamadım: soruyu daha basit anlatırım. ' +
   'Soruyu tekrar oku: şıklar olmadan sadece soruyu okurum. Şıkları oku: şıkları yavaşça tek tek okurum. ' +
   'C şıkkı neydi: sadece o şıkkı okurum. Verilenler neydi: verilenleri ve şekli tekrar anlatırım. Ne isteniyor: senden isteneni söylerim. ' +
+  'İpucu ver: ipucu vermem ama düşünmene yardım eden sorular sorarım. ' +
   'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';

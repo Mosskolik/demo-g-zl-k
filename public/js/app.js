@@ -655,6 +655,13 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'givens':
     case 'asked':
       return readQuestionPart(cmd.type, cmd.arg);
+    case 'hint':
+      // İpucu YOK (öğrenci soruyu kendisi çözmeli). Pólya'nın "soruyu anlama" soruları yönlendirmez.
+      if (!state.questions?.length) return notice('Önce bir sorunun fotoğrafını çekelim. Ekrana dokun.');
+      return reply('Sana ipucu vermiyorum, çünkü bu soruyu kendin çözebilirsin. Şunları kendine sor: ' +
+        'Bilinmeyen ne? Hangi bilgiler verilmiş? Bu bilgiler birbiriyle nasıl bağlantılı? ' +
+        'Verileri tekrar dinlemek için verilenler neydi, şıkları dinlemek için şıkları oku diyebilirsin. ' +
+        'Çözümü dinlemek istersen çözemedim de.');
     case 'explainAgain':
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       if (state.phase === 'awaitAnswer') state.phase = 'question';
