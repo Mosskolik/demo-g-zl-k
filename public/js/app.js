@@ -604,7 +604,7 @@ async function handleInput(raw, { voice = false } = {}) {
       setRate(Math.max(0.5, speaker.rate - 0.2));
       return speaker.lastText ? reply(speaker.lastText) : notice('Bundan sonra daha yavaş okuyacağım.');
     case 'fast':
-      setRate(Math.min(1.6, speaker.rate + 0.2));
+      setRate(Math.min(2.0, speaker.rate + 0.2)); // deneyimli dinleyiciler çok hızlı sentezlenmiş sesi takip edebiliyor
       return notice('Bundan sonra daha hızlı okuyacağım.');
     case 'help':
       return reply(HELP_TEXT);
@@ -666,7 +666,7 @@ async function handleInput(raw, { voice = false } = {}) {
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       if (state.phase === 'awaitAnswer') state.phase = 'question';
       // Soru açıklama moduna gider: sunucudaki ipucu filtresi burada da çalışır (serbest mod çözmeye başlayabilir)
-      return talk('question', 'Soruyu anlamadım. Bana daha basit ve daha yavaş anlatır mısın?');
+      return talk('question', 'Soruyu anlamadım. Soruyu daha kısa parçalarla, tek tek ve yavaşça tekrar anlatır mısın? Matematik sözcüklerini değiştirme, yorum katma.');
     case 'misread':
       // "yanlış okudun, x küp olacak" → düzelt; sadece "yanlış okudun" → düzeltmeyi sor
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim.');

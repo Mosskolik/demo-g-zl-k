@@ -62,7 +62,7 @@ console.log('✓ görüntüsüz okuma reddedildi');
 const hintBad = ['Önce iki tarafa yedi ekleriz.', 'Sonra üçe böleriz.', 'x eşittir altı buluruz.', 'Cevap C şıkkı.',
   'Kenarları çarparsan alanı bulursun.', 'Bunu Pisagor ile çözebilirsin.', 'Buradaki kare, ifadenin kendisiyle çarpılması demek.',
   'Faktöriyel, birden o sayıya kadar çarpım demek.', 'Paydaları eşitlersen toplayabilirsin.', 'Fonksiyon kuralında x yerine üç koy.',
-  'Bu işlemin sonucu on bir olur.', 'A şıkkı beş, B şıkkı altı.', 'Kökler toplamı katsayılarla bulunur.', 'İlk olarak parantezi açalım.'];
+  'Bu işlemin sonucu on bir olur.', 'A şıkkı beş, B şıkkı altı.', 'Kökler toplamı katsayılarla bulunur.', 'İlk olarak parantezi açalım.', 'Sonuç bir kesirli sayı olacak.', 'Cevap negatif bir sayı çıkar.'];
 const hintGood = ['Soruda bir dik üçgen var.', 'A köşesi sol altta, B köşesi sağ altta.', '|AB|, A ile B arasındaki uzunluk diye okunur.',
   'Verilenler şunlar: üç x eksi yedi eşittir on bir.', 'Senden istenen: denklemin çözümünün kaç olduğu.',
   'Senden istenen: bu toplama işleminin sonucunu bulman.', 'Senden istenen: ifadenin çarpanlarına ayrılmış hâlinin hangi şıkta olduğu.',

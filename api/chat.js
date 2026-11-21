@@ -129,7 +129,7 @@ const EN_NUM = { zero: 'sıfır', one: 'bir', two: 'iki', three: 'üç', four: '
   fifteen: 'on beş', sixteen: 'on altı', seventeen: 'on yedi', eighteen: 'on sekiz', nineteen: 'on dokuz', twenty: 'yirmi' };
 const EN_RE = new RegExp(`\\b(${Object.keys(EN_NUM).join('|')})\\b`, 'gi');
 // Konu adında çözüm yöntemi ima eden kelimeler (ipucu sayılır)
-const HINTY = /pisagor|öklid|teorem|bağıntı|formül|kural|yöntem|özdeşli|kökler (toplamı|çarpımı)|tales|sinüs|kosinüs|çarpanlara ayır/i;
+const HINTY = /pisagor|öklid|teorem|bağıntı|formül|kural|yöntem|özdeşli|kökler (toplamı|çarpımı)|kökler ile|katsayı|ilişki|tales|sinüs|kosinüs|çarpanlara ayır|açılım|benzerlik|oran orantı/i;
 function fixSpoken(t) {
   return typeof t === 'string' ? t.replace(EN_RE, (w) => EN_NUM[w.toLowerCase()]) : t;
 }
@@ -152,6 +152,7 @@ const HINT_RULES = [
   word('önce|ilk olarak|ilk adım|birinci adım|ikinci adım|ardından|daha sonra|sonra'),
   word('cevap|cevabı|cevabın|doğru şık|sonuç olarak|eşit olur'),
   /sonucu .* olur/,
+  /(sonuç|sonucu|cevap|cevabı)[^.!?]* (olacak|çıkacak|çıkar|olur)(?=$|[^a-zçğıöşü])/, // cevabın biçimini ele verme
   new RegExp(`(?:^|[^${L}])[a-e] şıkk`), // şıkları yeniden okuma
 ];
 // Tanım cümlesi + işlem kelimesi = işlemin nasıl yapılacağını tarif ediyor
