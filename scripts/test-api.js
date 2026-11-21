@@ -16,7 +16,7 @@ const cases = [
   ['Çek', 'capture'], ['fotoğraf çek', 'capture'], ['Tekrar et', 'repeat'], ['yavaş oku', 'slow'],
   ['Çöz', 'solve'], ['çözer misin', 'solve'], ['Cevabım 5', 'answer'], ['yeni soru', 'newq'],
   ['Dur!', 'stop'], ['evet', 'yes'], ['hayır x küp olacak', 'no'], ['devam et', 'continue'],
-  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['sıradaki soru', 'nextq'], ['sonraki soru', 'nextq'], ['sıradaki', 'nextq'], ['önceki soru', 'prevq'], ['üçüncü soru', 'gotoq'], ['2. soru', 'gotoq'], ['anlamadım', 'explainAgain'], ['on ikinci soru', 'gotoq'], ['yirmi birinci soru', 'gotoq'], ['soru on iki', 'gotoq'], ['ilk soru', 'gotoq'], ['son soru', 'gotoq'], ['Çekirdek nedir', 'free'], ['bu soru zor', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
+  ['Hazırım', 'ready'], ['ben hazırım', 'ready'], ['cevap vereceğim', 'ready'], ['çözemedim', 'solve'], ['cevabı söyle', 'solve'], ['bilmiyorum cevabı söyler misin', 'solve'], ['cevap ne', 'solve'], ['yanlış okudun x küp olacak', 'misread'], ['yanlış okudun', 'misread'], ['hayır', 'no'], ['sıradaki soru', 'nextq'], ['sonraki soru', 'nextq'], ['sıradaki', 'nextq'], ['önceki soru', 'prevq'], ['üçüncü soru', 'gotoq'], ['2. soru', 'gotoq'], ['anlamadım', 'explainAgain'], ['on ikinci soru', 'gotoq'], ['yirmi birinci soru', 'gotoq'], ['soru on iki', 'gotoq'], ['ilk soru', 'gotoq'], ['son soru', 'gotoq'], ['şıkları oku', 'options'], ['şıklar neydi', 'options'], ['c şıkkı neydi', 'option'], ['be şıkkını oku', 'option'], ['soruyu tekrar oku', 'stem'], ['verilenler neydi', 'givens'], ['şekli tekrar anlat', 'givens'], ['ne isteniyor', 'asked'], ['b şıkkı', 'free'], ['Çekirdek nedir', 'free'], ['bu soru zor', 'free'], ['Kökler toplamı nasıl bulunur?', 'free'],
 ];
 for (const [text, type] of cases) assert.equal(parseCommand(text).type, type, `"${text}" → ${type}`);
 assert.equal(parseCommand('cevabım B şıkkı').arg, 'b şıkkı');
@@ -66,7 +66,9 @@ const hintBad = ['Önce iki tarafa yedi ekleriz.', 'Sonra üçe böleriz.', 'x e
 const hintGood = ['Soruda bir dik üçgen var.', 'A köşesi sol altta, B köşesi sağ altta.', '|AB|, A ile B arasındaki uzunluk diye okunur.',
   'Verilenler şunlar: üç x eksi yedi eşittir on bir.', 'Senden istenen: denklemin çözümünün kaç olduğu.',
   'Senden istenen: bu toplama işleminin sonucunu bulman.', 'Senden istenen: ifadenin çarpanlarına ayrılmış hâlinin hangi şıkta olduğu.',
-  'Verilenler şunlar: torbada üç kırmızı ve beş mavi bilye var.', 'Senden istenen: karenin alanının kaç santimetrekare olduğu.'];
+  'Verilenler şunlar: torbada üç kırmızı ve beş mavi bilye var.', 'Senden istenen: karenin alanının kaç santimetrekare olduğu.',
+  'Bu ifade üç parçadan oluşuyor.', 'Payında x artı bir, paydasında iki var.', 'Parantezin tamamının karesi alınmış.',
+  'Birinci parça: iki x artı üç.', 'Senden istenen: bir sayı; şıklardan birini seçeceksin.'];
 for (const b of hintBad) assert.equal(stripHintSentences(`Bu soruyu sana açıklayayım. ${b} Verilenler şunlar: bir ifade.`).removed.length, 1, `silinmeli: ${b}`);
 for (const g of hintGood) assert.equal(stripHintSentences(`Bu soruyu sana açıklayayım. ${g}`).removed.length, 0, `kalmalı: ${g}`);
 assert.equal(stripHintSentences('Bu soruyu sana açıklayayım. Pisagor ile bulursun.').kept, '', 'geriye sadece giriş kalırsa açıklama okunmaz');

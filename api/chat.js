@@ -148,7 +148,7 @@ const HINT_RULES = [
   // "biz yaparız" ve "sen yaparsan / yapabilirsin" kalıbındaki işlem fiilleri: ekleriz, böleriz, bulursun…
   new RegExp(`[${L}]+(?:arız|eriz|ırız|iriz|uruz|ürüz|arsak|ersek|ırsak|irsek|ursak|ürsek|arsan|ersen|ırsan|irsen|ursan|ürsen|abilirsin|ebilirsin|ursun|ürsün|ırsın|irsin)(?=$|[^${L}])`),
   word('bulunur|hesaplanır|çarpılır|toplanır|bölünür|çıkarılır|sadeleştir[a-zçğıöşü]*|genişlet[a-zçğıöşü]*|eşitle[a-zçğıöşü]*'),
-  /payda|yerine koy|yerine yaz|kullanarak|uygulayarak|ters işaret|katsayı|karesini al|karekökünü al|çarpanlarına ayırırken/,
+  /yerine koy|yerine yaz|kullanarak|uygulayarak|ters işaret|katsayı|karesini al|karekökünü al|çarpanlarına ayırırken/,
   word('önce|ilk olarak|ilk adım|birinci adım|ikinci adım|ardından|daha sonra|sonra'),
   word('cevap|cevabı|cevabın|doğru şık|sonuç olarak|eşit olur'),
   /sonucu .* olur/,

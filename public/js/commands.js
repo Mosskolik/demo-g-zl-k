@@ -36,7 +36,8 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
+ *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked |
+ *         capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
   const t = normalize(raw);
@@ -55,6 +56,26 @@ export function parseCommand(raw) {
   if (words.length <= 5 && /^(?:ben |hocam |tamam )?(çözemedim|çözemiyorum|yapamadım|yapamıyorum|bilmiyorum|bulamadım|pes ediyorum|cevabı söyle|cevabı ver|cevabı nedir|cevabı ne|cevap ne|cevap nedir|doğru cevap ne|cevabı açıkla|nasıl çözülür)/.test(t)) {
     return { type: 'solve', arg: 'gaveUp' };
   }
+
+  // SORUNUN PARÇALARINI TEKRAR DİNLEME (yapay zekâya gitmez, ipucu riski yok).
+  // Görme engelli öğrenci soruya tekrar "göz atamaz"; her şeyi aklında tutmak zorunda kalmasın.
+  // "şıkları oku", "şıklar neydi", "seçenekleri tekrar söyle"
+  if (/^(şıkları|seçenekleri)( bir daha| tekrar| yeniden)?( oku| söyle| say| tekrarla| tekrar et)$/.test(t) ||
+      /^(şıklar|seçenekler)(ı|i)?( neydi| ne| nelerdi| nedir)?$/.test(t) || /^şıkları (tekrar )?(dinle|duymak istiyorum)/.test(t)) {
+    return { type: 'options' };
+  }
+  // "c şıkkı neydi", "be şıkkını oku", "d şıkkı ne" (harfler konuşma tanımada "be, ce, de" diye de gelebilir)
+  const opt = t.match(/^(a|b|be|c|ce|d|de|e) şıkkı(?:nı|ni)? ?(neydi|ne|nedir|oku|söyle|tekrar oku|tekrar et|bir daha oku|tekrar)$/);
+  if (opt) return { type: 'option', arg: opt[1][0].toUpperCase() };
+  // "soruyu tekrar oku", "sadece soruyu oku" → şıklar olmadan soru kökü
+  if (/^(sadece )?(soruyu|soru kökünü|soru metnini)( bir daha| tekrar| yeniden)? (oku|söyle)$/.test(t)) return { type: 'stem' };
+  // "verilenler neydi", "şekli tekrar anlat", "açıklamayı tekrar et"
+  if (/^(verilenler|verilenleri|neler verilmiş|ne verilmiş|ne veriliyor)( neydi| nelerdi| ne)?( tekrar)?( oku| söyle| say)?$/.test(t) ||
+      /^(şekli|açıklamayı|şekli bir daha|açıklamayı bir daha)( tekrar)? (anlat|açıkla|oku|söyle|tekrar et)$/.test(t)) {
+    return { type: 'givens' };
+  }
+  // "ne isteniyor", "soru ne istiyor", "benden ne isteniyor"
+  if (/^(soru |benden |sorudan )?(ne isteniyor|ne istiyor|ne istenmiş|istenen ne|istenen neydi|neyi bulacağım|neyi bulmam gerekiyor|ne bulmam gerekiyor)$/.test(t)) return { type: 'asked' };
 
   // "cevabım 5", "cevap b şıkkı", "benim cevabım 12"
   const ans = t.match(/^(?:benim )?(?:cevabım|cevap|yanıtım|yanıt)(?: şu)?\s*(.*)$/);
@@ -111,6 +132,8 @@ export const HELP_TEXT =
   'Yanlış okudun: sayfayı yanlış okuduysam düzeltirim; örneğin yanlış okudun, x küp olacak. ' +
   'Sıradaki soru, önceki soru ya da üçüncü soru: sayfadaki sorular arasında gezersin. ' +
   'Anlamadım: soruyu daha basit anlatırım. ' +
+  'Soruyu tekrar oku: şıklar olmadan sadece soruyu okurum. Şıkları oku: şıkları yavaşça tek tek okurum. ' +
+  'C şıkkı neydi: sadece o şıkkı okurum. Verilenler neydi: verilenleri ve şekli tekrar anlatırım. Ne isteniyor: senden isteneni söylerim. ' +
   'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';

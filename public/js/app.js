@@ -227,8 +227,29 @@ const ORDWORD = '(?:\\S*(?:inci|ıncı|uncu|üncü|nci|ncı|ncu|ncü)|ilk)';
 const LEADING_NO = new RegExp(`^\\s*(?:soru\\s+${NUMWORD}|${ORDWORD}\\s+soru|\\d+\\.?\\s+soru)\\s*[.:,]?\\s*`, 'i');
 // İlk soruda tüm seçenekleri hatırlat; sonrakilerde kısa tut (asistanın kendi sesi mikrofona
 // kaçarsa komut sanılmasın diye komut kelimelerini mümkün olduğunca az söylüyoruz)
+/**
+ * Okunuşu soru kökü ve şıklara ayırır: "… kaçtır? A şıkkı: beş, B şıkkı: altı." →
+ * { stem: "… kaçtır?", options: [{h:'A', text:'beş'}, {h:'B', text:'altı'}] }
+ * (Öğrenci "şıkları oku", "C şıkkı neydi" dediğinde yapay zekâya gitmeden okunur.)
+ */
+function splitOptions(okunus) {
+  const text = String(okunus || '').replace(LEADING_NO, '').trim();
+  const first = text.search(/(^|[\s.?!,:;])A şıkkı/);
+  if (first < 0) return { stem: text, options: [] };
+  const stem = text.slice(0, first + (/^[\s.?!,:;]/.test(text[first]) ? 1 : 0)).trim();
+  const options = [];
+  const re = /([A-E]) şıkkı\s*[:,]?\s*([\s\S]*?)(?=(?:[\s.,;])[A-E] şıkkı|$)/g;
+  let m;
+  while ((m = re.exec(text.slice(first)))) {
+    const body = m[2].trim().replace(/[,;.]+$/, '').trim();
+    if (body) options.push({ h: m[1], text: body });
+  }
+  return { stem, options };
+}
+
 const CLOSING_FIRST = 'Acele etme, düşünmek için zamanın var. Hazır olduğunda hazırım de, sonra cevabını söyle. ' +
-  'Anlamadığın yer olursa anlamadım de. Çözümü dinlemek istersen bana söylemen yeterli.';
+  'Anlamadığın yer olursa anlamadım de. Şıkları tekrar dinlemek için şıkları oku, verileri tekrar dinlemek için verilenler neydi diyebilirsin. ' +
+  'Çözümü dinlemek istersen bana söylemen yeterli.';
 const CLOSING = 'Acele etme. Hazır olduğunda hazırım de.';
 
 /**
@@ -370,6 +391,7 @@ async function presentQuestion(i, prefix = '') {
   const closing = state.closingSaid ? CLOSING : CLOSING_FIRST;
   state.closingSaid = true;
   const rest = [explanation, closing].filter(Boolean).join(' ');
+  q.explanation = explanation || ''; // "verilenler neydi", "ne isteniyor" komutları için
   state.history = [
     { role: 'user', text: 'Soruyu bana anlat.' },
     { role: 'model', text: `${body} ${explanation || ''}`.trim() },
@@ -431,6 +453,45 @@ async function callAI(payload, waitingText = 'Düşünüyorum.') {
 }
 
 /** Sayfa bağlamında sohbet modları (explain, question, check, solve, free) */
+/** "şıkları oku", "C şıkkı neydi", "soruyu tekrar oku", "verilenler neydi", "ne isteniyor" */
+async function readQuestionPart(kind, letter) {
+  const q = state.questions?.[state.qIndex];
+  if (!q) {
+    if (state.page) return notice('Bu sayfada okunacak bir soru yok.');
+    return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
+  }
+  const { stem, options } = splitOptions(q.okunus);
+  const slow = Math.max(0.6, speaker.rate - 0.15); // şıklar ve kök biraz daha yavaş
+  if (kind === 'options') {
+    if (!options.length) return reply('Bu soruda şık yok. Cevabı kendin bulup söyleyeceksin.');
+    const text = `Bu sorunun ${options.length} şıkkı var. ` + options.map((o) => `${o.h} şıkkı: ${o.text}.`).join(' ');
+    el.reply.textContent = text; setStatus('Şıklar');
+    await speaker.say(text, { rate: slow });
+    return;
+  }
+  if (kind === 'option') {
+    const o = options.find((x) => x.h === letter);
+    if (!o) return reply(options.length ? `Bu soruda ${letter} şıkkı yok. Şıklar ${options.map((x) => x.h).join(', ')}.` : 'Bu soruda şık yok.');
+    const text = `${o.h} şıkkı: ${o.text}.`;
+    el.reply.textContent = text;
+    await speaker.say(text, { rate: slow });
+    return;
+  }
+  if (kind === 'stem') {
+    const text = stem || String(q.okunus || '');
+    el.reply.textContent = text;
+    await speaker.say(text, { rate: slow });
+    return;
+  }
+  const exp = String(q.explanation || '');
+  if (kind === 'asked') {
+    const asked = exp.match(/Senden istenen[^.?!]*[.?!]?/i)?.[0];
+    return reply(asked || (stem ? `Soru şunu soruyor: ${stem}` : 'Soruyu tekrar okuyorum. ' + q.okunus));
+  }
+  // givens: açıklamanın tamamı (şekil + verilenler + istenen); yoksa soruyu tekrar oku
+  return reply(exp ? exp.replace(/^Bu soruyu sana açıklayayım\.\s*/i, '') : `Soruyu tekrar okuyorum. ${stem || q.okunus}`);
+}
+
 async function talk(mode, message) {
   const res = await callAI({
     mode,
@@ -446,6 +507,7 @@ async function talk(mode, message) {
     const q = state.questions?.[state.qIndex];
     text = q ? `Soruyu bir kez daha okuyorum. ${String(q.okunus || '').replace(LEADING_NO, '')}` : 'Bu soruyu sana daha fazla açıklayamıyorum.';
   }
+  if (mode === 'question' && res.reply) { const cq = state.questions?.[state.qIndex]; if (cq) cq.explanation = res.reply; }
   // Doğru cevaptan veya çözümden sonra, sayfada başka soru varsa nasıl geçileceğini söyle
   // Doğruluğu model [DOĞRU]/[YANLIŞ] etiketiyle bildirir (sunucu ayırır); cümleden tahmin YAPMIYORUZ
   const correct = mode === 'check' && res.correct === true;
@@ -484,6 +546,10 @@ function isEcho(raw) {
   if (Date.now() - speaker.lastSpeechEndAt < 10000 && spoken.trimEnd().endsWith(' ' + words.join(' '))) return true;
   if (words.length < 3) return false;
   if (spoken.includes(' ' + words.join(' ') + ' ')) return true;
+  // Kısa komutlar ("soruyu tekrar oku", "c şıkkı neydi") asistanın cümlelerinde de geçen kelimelerden oluşur;
+  // kelime örtüşmesine bakmak onları yanlışlıkla yankı sayar. Komutlarda sadece birebir tekrar (yukarıdaki iki kural) yankıdır.
+  const type = parseCommand(raw).type;
+  if (type !== 'free' && type !== 'answer') return false;
   const spokenWords = new Set(spoken.split(' '));
   const overlap = words.filter((w) => spokenWords.has(w)).length / words.length;
   return overlap >= 0.8 && Date.now() - speaker.lastSpokeAt < 60000;
@@ -582,6 +648,13 @@ async function handleInput(raw, { voice = false } = {}) {
       }
       return presentQuestion(cmd.arg);
     }
+    // ----- Sorunun parçalarını tekrar dinleme (yapay zekâya gitmez) -----
+    case 'options':
+    case 'option':
+    case 'stem':
+    case 'givens':
+    case 'asked':
+      return readQuestionPart(cmd.type, cmd.arg);
     case 'explainAgain':
       if (!state.page) return notice('Önce bir sayfanın fotoğrafını çekelim. Ekrana dokun.');
       if (state.phase === 'awaitAnswer') state.phase = 'question';
