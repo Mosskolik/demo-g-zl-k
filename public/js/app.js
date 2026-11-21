@@ -60,13 +60,13 @@ speaker.rate = Number(settings.rate);
 speaker.muted = settings.srMode;
 
 function loadSettings() {
-  const def = { rate: 1.0, autoListen: true, srMode: false }; // sürekli dinleme her cihazda varsayılan
+  const def = { rate: 1.0, autoListen: true, srMode: false, explain: true }; // sürekli dinleme her cihazda varsayılan
   try { return { ...def, ...JSON.parse(localStorage.getItem('ayarlar') || '{}') }; } catch { return def; }
 }
 function saveSettings() {
   try {
     localStorage.setItem('ayarlar', JSON.stringify({
-      rate: speaker.rate, autoListen: el.autoListen.checked, srMode: el.srMode.checked,
+      rate: speaker.rate, autoListen: el.autoListen.checked, srMode: el.srMode.checked, explain: settings.explain !== false,
     }));
   } catch { /* gizli sekmede kaydedilemeyebilir, sorun değil */ }
 }
@@ -368,7 +368,9 @@ async function presentQuestion(i, prefix = '') {
   state.busy = true; // okuma + açıklama bitene kadar mikrofon kapalı
   el.capture.classList.add('busy');
   let settled = false;
-  const explainP = askAI({ mode: 'question', message: 'Bu soruyu bana açıkla.', pageText: contextFor(i), history: [] })
+  // "Sadece oku" ayarında açıklama istenmez (deneyimli öğrenci; isterse "anlamadım" ya da "verilenler neydi" der)
+  const explainP = (settings.explain === false ? Promise.resolve({ reply: '' })
+    : askAI({ mode: 'question', message: 'Bu soruyu bana açıkla.', pageText: contextFor(i), history: [] }))
     .then((r) => r.reply)
     .catch((err) => { diag('aciklama-hata', { kod: err.code }); return null; })
     .finally(() => { settled = true; });
@@ -604,7 +606,7 @@ async function handleInput(raw, { voice = false } = {}) {
       setRate(Math.max(0.5, speaker.rate - 0.2));
       return speaker.lastText ? reply(speaker.lastText) : notice('Bundan sonra daha yavaş okuyacağım.');
     case 'fast':
-      setRate(Math.min(2.0, speaker.rate + 0.2)); // deneyimli dinleyiciler çok hızlı sentezlenmiş sesi takip edebiliyor
+      setRate(Math.min(3.0, speaker.rate + 0.25)); // görme engelli dinleyiciler ortalama ~2 kat, deneyimliler ~3 kat hızı takip ediyor (Bragg 2018)
       return notice('Bundan sonra daha hızlı okuyacağım.');
     case 'help':
       return reply(HELP_TEXT);
@@ -655,6 +657,12 @@ async function handleInput(raw, { voice = false } = {}) {
     case 'givens':
     case 'asked':
       return readQuestionPart(cmd.type, cmd.arg);
+    case 'explainOff':
+      settings.explain = false; saveSettings();
+      return notice('Tamam, bundan sonra soruları sadece okuyacağım, açıklama yapmayacağım. Açıklama istersen anlamadım de. Geri açmak için açıklamayı aç de.');
+    case 'explainOn':
+      settings.explain = true; saveSettings();
+      return notice('Tamam, bundan sonra her soruyu okuduktan sonra açıklayacağım.');
     case 'hint':
       // İpucu YOK (öğrenci soruyu kendisi çözmeli). Pólya'nın "soruyu anlama" soruları yönlendirmez.
       if (!state.questions?.length) return notice('Önce bir sorunun fotoğrafını çekelim. Ekrana dokun.');

@@ -36,7 +36,7 @@ export function normalize(text) {
 /**
  * @param {string} raw  söylenen/yazılan metin
  * @returns {{type:string, arg?:string}}
- *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked | hint |
+ *   type: ready | misread | forceContinue | nextq | prevq | gotoq | explainAgain | options | option | stem | givens | asked | hint | explainOff | explainOn |
  *         capture | repeat | slow | fast | solve | answer | newq | stop | yes | no | continue | help | free
  */
 export function parseCommand(raw) {
@@ -74,6 +74,9 @@ export function parseCommand(raw) {
       /^(şekli|açıklamayı|şekli bir daha|açıklamayı bir daha)( tekrar)? (anlat|açıkla|oku|söyle|tekrar et)$/.test(t)) {
     return { type: 'givens' };
   }
+  // Ayrıntı düzeyi: "sadece oku" (açıklama yapma) / "açıklamayı aç"
+  if (/^(sadece oku|sadece soruyu oku(yun)?|açıklama yapma|açıklamayı kapat|açıklamaları kapat|açıklama istemiyorum)$/.test(t)) return { type: 'explainOff' };
+  if (/^(açıklamayı aç|açıklamaları aç|açıklama yap|açıklamaları geri aç|her soruyu açıkla)$/.test(t)) return { type: 'explainOn' };
   // "ipucu ver", "nasıl başlayayım" → ipucu YOK; yönlendirmeyen düşünme soruları (Pólya: soruyu anlama aşaması)
   if (/^(bir )?(ipucu|ipucu ver|ipucu verir misin|ipucu verebilir misin|bana ipucu ver|ipucu lütfen|küçük bir ipucu ver|nasıl başlayayım|nereden başlayayım|nasıl başlarım|nereden başlarım)$/.test(t)) return { type: 'hint' };
   // "ne isteniyor", "soru ne istiyor", "benden ne isteniyor"
@@ -137,6 +140,7 @@ export const HELP_TEXT =
   'Soruyu tekrar oku: şıklar olmadan sadece soruyu okurum. Şıkları oku: şıkları yavaşça tek tek okurum. ' +
   'C şıkkı neydi: sadece o şıkkı okurum. Verilenler neydi: verilenleri ve şekli tekrar anlatırım. Ne isteniyor: senden isteneni söylerim. ' +
   'İpucu ver: ipucu vermem ama düşünmene yardım eden sorular sorarım. ' +
+  'Sadece oku: soruları açıklamadan sadece okurum; açıklamayı aç: yine açıklarım. Hızlı oku ve yavaş oku: okuma hızını değiştirir. ' +
   'Yeni soru: yeni bir sayfanın fotoğrafını çekersin. ' +
   'Dur: susar. ' +
   'Bunların dışında ne sorarsan soru olarak cevaplarım.';
