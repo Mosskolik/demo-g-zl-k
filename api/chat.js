@@ -118,6 +118,14 @@ export default async function handler(req, res) {
     }
     // Serbest soruda da soruda verilmeyen şık değeri (olası cevap) söylenmesin — çözüm istenmediği sürece
     if (mode === 'free') {
+      // Model, aktif sorunun ipucu olacak bir kavram sorusunu ertelediyse ([ERTELE]) cevabı ipucu filtresinden geçir
+      if (/^\s*\[ERTELE\]/i.test(text)) {
+        text = text.replace(/^\s*\[ERTELE\]\s*/i, '');
+        const st = stripHintSentences(text);
+        if (st.removed.length) console.log(`[serbest] ertelemede ipucu cümlesi silindi: ${st.removed.length}`);
+        text = st.kept || 'Bunu şimdi anlatırsam bu sorunun ipucu olur. Soruyu çözdükten sonra ya da çözemedim dersen anlatırım.';
+      }
+      text = text.replace(/\[ERTELE\]\s*/gi, '');
       const leak = stripOptionLeaks(text, pageText);
       if (leak.removed.length) {
         console.log(`[serbest] şık değeri sızıntısı silindi: ${leak.removed.length} model=${result.model}`);
