@@ -103,6 +103,12 @@ export default async function handler(req, res) {
       if (tag) { correct = /^DO/i.test(tag[1]); text = text.slice(tag.index + tag[0].length); }
       text = text.replace(/<hesap>[\s\S]*?<\/hesap>/gi, '').replace(/\[(DOĞRU|DOGRU|YANLIŞ|YANLIS)\]\s*/gi, '').replace(/<\/?hesap>/gi, '').trim();
     }
+    // Soru açıklamasında çözüm/ipucu içeren cümleleri öğrenciye okutma (modelden bağımsız güvenlik ağı)
+    if (mode === 'question') {
+      const { kept, removed } = stripHintSentences(text);
+      if (removed.length) console.log(`[aciklama] ipucu cümlesi silindi: ${removed.length} model=${result.model}`);
+      text = kept;
+    }
     return send(res, 200, { reply: text, correct, model: result.model });
   } catch (err) {
     if (err instanceof ProviderError) {
@@ -123,6 +129,43 @@ const EN_RE = new RegExp(`\\b(${Object.keys(EN_NUM).join('|')})\\b`, 'gi');
 const HINTY = /pisagor|öklid|teorem|bağıntı|formül|kural|yöntem|özdeşli|kökler (toplamı|çarpımı)|tales|sinüs|kosinüs|çarpanlara ayır/i;
 function fixSpoken(t) {
   return typeof t === 'string' ? t.replace(EN_RE, (w) => EN_NUM[w.toLowerCase()]) : t;
+}
+
+// ---------- Soru açıklamasında ipucu filtresi ----------
+// Öğrenci soruyu KENDİSİ çözecek. Açıklamada şu tür cümleler ipucudur ve silinir:
+// işlem/kavram tarifi ("kendisiyle çarpmak demek"), yöntem/formül/kural, işlem adımları ("önce… sonra…"),
+// cevap/sonuç, şıkları tekrar okuma.
+// Not: JavaScript'te \b Türkçe harfleri (ç, ö, ş…) kelime saymaz → kendi kelime sınırımızı kullanıyoruz.
+const L = 'a-zçğıöşüâîû';
+const word = (alts) => new RegExp(`(?:^|[^${L}])(?:${alts})(?=$|[^${L}])`);
+const HINT_RULES = [
+  /formül|teorem|pisagor|öklid|tales|özdeşli|bağıntı|yöntem/,
+  word('kural[a-zçğıöşü]*'),
+  /kendisiyle|kendisi ile|birden .*kadar|bire kadar|1'den|1 den/,
+  // "biz yaparız" ve "sen yaparsan / yapabilirsin" kalıbındaki işlem fiilleri: ekleriz, böleriz, bulursun…
+  new RegExp(`[${L}]+(?:arız|eriz|ırız|iriz|uruz|ürüz|arsak|ersek|ırsak|irsek|ursak|ürsek|arsan|ersen|ırsan|irsen|ursan|ürsen|abilirsin|ebilirsin|ursun|ürsün|ırsın|irsin)(?=$|[^${L}])`),
+  word('bulunur|hesaplanır|çarpılır|toplanır|bölünür|çıkarılır|sadeleştir[a-zçğıöşü]*|genişlet[a-zçğıöşü]*|eşitle[a-zçğıöşü]*'),
+  /payda|yerine koy|yerine yaz|kullanarak|uygulayarak|ters işaret|katsayı|karesini al|karekökünü al|çarpanlarına ayırırken/,
+  word('önce|ilk olarak|ilk adım|birinci adım|ikinci adım|ardından|daha sonra|sonra'),
+  word('cevap|cevabı|cevabın|doğru şık|sonuç olarak|eşit olur'),
+  /sonucu .* olur/,
+  new RegExp(`(?:^|[^${L}])[a-e] şıkk`), // şıkları yeniden okuma
+];
+// Tanım cümlesi + işlem kelimesi = işlemin nasıl yapılacağını tarif ediyor
+const DEFINITION = /(demek|demektir|anlamına gel|anlamı|denir|ifade eder)/;
+const OPERATION = /(çarp|topla|toplam|böl|çıkar|fark|kuvvet|üs|kare|küp|kök)/;
+
+export function stripHintSentences(text) {
+  const sentences = String(text).replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  const kept = [], removed = [];
+  for (const sentence of sentences) {
+    const low = sentence.toLocaleLowerCase('tr');
+    const isHint = HINT_RULES.some((r) => r.test(low)) || (DEFINITION.test(low) && OPERATION.test(low));
+    (isHint ? removed : kept).push(sentence);
+  }
+  // Sadece "Bu soruyu sana açıklayayım." kaldıysa açıklama yok say
+  const meaningful = kept.filter((x) => !/açıklayayım/i.test(x));
+  return { kept: meaningful.length ? kept.join(' ') : '', removed };
 }
 
 function send(res, status, obj) {

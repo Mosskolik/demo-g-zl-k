@@ -7,7 +7,9 @@ import { Readable } from 'node:stream';
 
 process.env.AI_PROVIDER = 'mock';
 const { parseCommand } = await import('../public/js/commands.js');
-const chat = (await import('../api/chat.js')).default;
+const chatModule = await import('../api/chat.js');
+const chat = chatModule.default;
+const { stripHintSentences } = chatModule;
 
 // --- Komut tanıma ---
 const cases = [
@@ -55,5 +57,19 @@ console.log('✓ geçersiz mod reddedildi');
 r = await call({ mode: 'read' });
 assert.equal(r.status, 400);
 console.log('✓ görüntüsüz okuma reddedildi');
+
+// --- Soru açıklamasında ipucu filtresi (öğrenci soruyu kendisi çözmeli) ---
+const hintBad = ['Önce iki tarafa yedi ekleriz.', 'Sonra üçe böleriz.', 'x eşittir altı buluruz.', 'Cevap C şıkkı.',
+  'Kenarları çarparsan alanı bulursun.', 'Bunu Pisagor ile çözebilirsin.', 'Buradaki kare, ifadenin kendisiyle çarpılması demek.',
+  'Faktöriyel, birden o sayıya kadar çarpım demek.', 'Paydaları eşitlersen toplayabilirsin.', 'Fonksiyon kuralında x yerine üç koy.',
+  'Bu işlemin sonucu on bir olur.', 'A şıkkı beş, B şıkkı altı.', 'Kökler toplamı katsayılarla bulunur.', 'İlk olarak parantezi açalım.'];
+const hintGood = ['Soruda bir dik üçgen var.', 'A köşesi sol altta, B köşesi sağ altta.', '|AB|, A ile B arasındaki uzunluk diye okunur.',
+  'Verilenler şunlar: üç x eksi yedi eşittir on bir.', 'Senden istenen: denklemin çözümünün kaç olduğu.',
+  'Senden istenen: bu toplama işleminin sonucunu bulman.', 'Senden istenen: ifadenin çarpanlarına ayrılmış hâlinin hangi şıkta olduğu.',
+  'Verilenler şunlar: torbada üç kırmızı ve beş mavi bilye var.', 'Senden istenen: karenin alanının kaç santimetrekare olduğu.'];
+for (const b of hintBad) assert.equal(stripHintSentences(`Bu soruyu sana açıklayayım. ${b} Verilenler şunlar: bir ifade.`).removed.length, 1, `silinmeli: ${b}`);
+for (const g of hintGood) assert.equal(stripHintSentences(`Bu soruyu sana açıklayayım. ${g}`).removed.length, 0, `kalmalı: ${g}`);
+assert.equal(stripHintSentences('Bu soruyu sana açıklayayım. Pisagor ile bulursun.').kept, '', 'geriye sadece giriş kalırsa açıklama okunmaz');
+console.log(`✓ soru açıklaması ipucu filtresi (${hintBad.length} ipucu silindi, ${hintGood.length} temiz cümle kaldı)`);
 
 console.log('\nTüm testler geçti.');
