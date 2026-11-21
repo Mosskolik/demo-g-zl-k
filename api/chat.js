@@ -14,6 +14,7 @@ import { config } from '../lib/config.js';
 import { getProvider } from '../lib/providers/index.js';
 import { ProviderError } from '../lib/providers/AIProvider.js';
 import { buildSystem, READ_SCHEMA } from '../lib/prompts.js';
+import { okunuslar } from '../lib/turkceSayi.js';
 
 const MODES = ['read', 'correct', 'explain', 'question', 'check', 'solve', 'free'];
 const MAX_IMAGE_CHARS = 4_000_000; // ~3 MB görüntü (Vercel sınırı 4,5 MB)
@@ -110,7 +111,10 @@ export default async function handler(req, res) {
     if (mode === 'question') {
       const { kept, removed } = stripHintSentences(text);
       if (removed.length) console.log(`[aciklama] ipucu cümlesi silindi: ${removed.length} model=${result.model}`);
-      text = kept;
+      // Cevap şıklardan biridir: soruda verilmeyen bir şık değeri açıklamada geçiyorsa o cümle cevabı sızdırıyor olabilir
+      const leak = stripOptionLeaks(kept, pageText);
+      if (leak.removed.length) console.log(`[aciklama] şık değeri sızıntısı silindi: ${leak.removed.length} model=${result.model}`);
+      text = leak.kept;
     }
     return send(res, 200, { reply: text, correct, model: result.model });
   } catch (err) {
@@ -168,6 +172,46 @@ export function stripHintSentences(text) {
     (isHint ? removed : kept).push(sentence);
   }
   // Sadece "Bu soruyu sana açıklayayım." kaldıysa açıklama yok say
+  const meaningful = kept.filter((x) => !/açıklayayım/i.test(x));
+  return { kept: meaningful.length ? kept.join(' ') : '', removed };
+}
+
+// ---------- Şık değeri sızıntı filtresi (modelden bağımsız) ----------
+// Doğru cevap şıklardan biridir. Açıklama şıklardan bahsetmemeli; soruda VERİLMEMİŞ bir şık değeri
+// ("on üç", "altıda beş") açıklamada geçiyorsa o cümle cevabı ele veriyor olabilir → öğrenciye okunmaz.
+// Sadece sayı ve kesir şıkları kontrol edilir; "bir" ve "iki" çok yaygın kelimeler olduğu için atlanır.
+const LETTERS = 'a-zçğıöşüâîû';
+export function stripOptionLeaks(text, pageText) {
+  const src = String(pageText || '');
+  const re = /(?:^|[\s(])([A-E])\s*[).:]\s*(.+?)(?=\s+[A-E]\s*[).:]|\n|$)/g;
+  const options = [];
+  let m, firstIdx = -1;
+  while ((m = re.exec(src))) {
+    if (firstIdx < 0) firstIdx = m.index;
+    options.push(m[2].trim().replace(/[.,;]+$/, ''));
+  }
+  if (!options.length) return { kept: text, removed: [] };
+  const stem = src.slice(0, firstIdx);
+  const patterns = [];
+  for (const value of options) {
+    const digits = value.replace(/\s+/g, '');
+    if (new RegExp(`(^|[^\\d])${digits.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')}([^\\d]|$)`).test(stem)) continue; // soruda verilmiş
+    for (const reading of okunuslar(value)) {
+      if (reading === 'bir' || reading === 'iki') continue;
+      const esc = reading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/ /g, '\\s+');
+      patterns.push(new RegExp(`(?:^|[^${LETTERS}])${esc}(?=$|[^${LETTERS}]|[td][üuıi]r(?:$|[^${LETTERS}]))`));
+    }
+    if (/^-?\d+([.,/]\d+)?$/.test(digits) && !['1', '2'].includes(digits)) {
+      patterns.push(new RegExp(`(^|[^\\d])${digits.replace(/[.*+?^${}()|[\]\\/-]/g, '\\$&')}([^\\d]|$)`));
+    }
+  }
+  if (!patterns.length) return { kept: text, removed: [] };
+  const sentences = String(text).replace(/\s+/g, ' ').trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  const kept = [], removed = [];
+  for (const sentence of sentences) {
+    const low = sentence.toLocaleLowerCase('tr');
+    (patterns.some((p) => p.test(low)) ? removed : kept).push(sentence);
+  }
   const meaningful = kept.filter((x) => !/açıklayayım/i.test(x));
   return { kept: meaningful.length ? kept.join(' ') : '', removed };
 }

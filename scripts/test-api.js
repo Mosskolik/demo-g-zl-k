@@ -9,7 +9,8 @@ process.env.AI_PROVIDER = 'mock';
 const { parseCommand } = await import('../public/js/commands.js');
 const chatModule = await import('../api/chat.js');
 const chat = chatModule.default;
-const { stripHintSentences } = chatModule;
+const { stripHintSentences, stripOptionLeaks } = chatModule;
+const { sayiOku, kesirOku, okunuslar } = await import('../lib/turkceSayi.js');
 
 // --- Komut tanıma ---
 const cases = [
@@ -73,5 +74,21 @@ for (const b of hintBad) assert.equal(stripHintSentences(`Bu soruyu sana açıkl
 for (const g of hintGood) assert.equal(stripHintSentences(`Bu soruyu sana açıklayayım. ${g}`).removed.length, 0, `kalmalı: ${g}`);
 assert.equal(stripHintSentences('Bu soruyu sana açıklayayım. Pisagor ile bulursun.').kept, '', 'geriye sadece giriş kalırsa açıklama okunmaz');
 console.log(`✓ soru açıklaması ipucu filtresi (${hintBad.length} ipucu silindi, ${hintGood.length} temiz cümle kaldı)`);
+
+// --- Türkçe sayı okunuşu ---
+assert.equal(sayiOku(13), 'on üç'); assert.equal(sayiOku(120), 'yüz yirmi'); assert.equal(sayiOku(1999), 'bin dokuz yüz doksan dokuz');
+assert.equal(sayiOku(-4), 'eksi dört'); assert.equal(kesirOku(5, 6), 'altıda beş'); assert.equal(kesirOku(3, 40), 'kırkta üç');
+assert.deepEqual(okunuslar('2x+1'), []);
+console.log('✓ Türkçe sayı okunuşu');
+
+// --- Şık değeri sızıntı filtresi: soruda verilmeyen şık değeri açıklamada geçerse cümle silinir ---
+const sayfa7 = 'Ünite: Üçgenler\nSoru 7: |AB| = 12 cm ve |AC| = 5 cm olduğuna göre |BC| kaç cm dir? A) 11 B) 13 C) 15 D) 17';
+assert.equal(stripOptionLeaks('Bu soruyu sana açıklayayım. Kenar on üç santimetre olur. Senden istenen: B C uzunluğu.', sayfa7).removed.length, 1);
+assert.equal(stripOptionLeaks('Bu soruyu sana açıklayayım. A ile B arası on iki santimetre, A ile C arası beş santimetre.', sayfa7).removed.length, 0);
+assert.equal(stripOptionLeaks('Bu soruyu sana açıklayayım. Uzunluk 13 cm çıkar.', sayfa7).removed.length, 1);
+const kesirSoru = 'Soru 7: 2/3 + 1/6 işleminin sonucu kaçtır? A) 1/2 B) 3/4 C) 5/6 D) 1';
+assert.equal(stripOptionLeaks('Bu soruyu sana açıklayayım. Birinci parça üçte iki, ikinci parça altıda bir.', kesirSoru).removed.length, 0);
+assert.equal(stripOptionLeaks('Bu soruyu sana açıklayayım. Toplam altıda beş olur.', kesirSoru).removed.length, 1);
+console.log('✓ şık değeri sızıntı filtresi');
 
 console.log('\nTüm testler geçti.');
