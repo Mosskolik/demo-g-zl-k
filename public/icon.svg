@@ -1,1 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="12" fill="#000"/><text x="32" y="44" font-size="36" font-family="Arial" font-weight="bold" fill="#ffd400" text-anchor="middle">√x</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Takım Orbital — atom simgesi; ortada ince yapı sabiti 1/137 -->
+  <defs>
+    <radialGradient id="cekirdek" cx=".35" cy=".3" r=".85">
+      <stop offset="0" stop-color="#FFF3A6"/><stop offset=".5" stop-color="#FFD400"/><stop offset="1" stop-color="#FF8A00"/>
+    </radialGradient>
+  </defs>
+  <rect width="100" height="100" rx="22" fill="#0B1230"/>
+  <circle cx="14" cy="16" r="1.2" fill="#fff" opacity=".7"/><circle cx="88" cy="12" r="1" fill="#fff" opacity=".6"/><circle cx="90" cy="88" r="1.2" fill="#fff" opacity=".5"/>
+  <ellipse cx="50" cy="50" rx="43" ry="14" fill="none" stroke="#FFD400" stroke-width="2.4"/>
+  <ellipse cx="50" cy="50" rx="43" ry="14" fill="none" stroke="#FFD400" stroke-width="2.4" transform="rotate(60 50 50)"/>
+  <ellipse cx="50" cy="50" rx="43" ry="14" fill="none" stroke="#FFD400" stroke-width="2.4" transform="rotate(120 50 50)"/>
+  <circle cx="93" cy="50" r="3.6" fill="#fff"/><circle cx="28.5" cy="12.8" r="3.6" fill="#fff"/><circle cx="28.5" cy="87.2" r="3.6" fill="#fff"/>
+  <circle cx="50" cy="50" r="22" fill="url(#cekirdek)"/>
+  <text x="50" y="45" font-size="12" font-weight="900" fill="#0B1230" text-anchor="middle" font-family="DejaVu Sans, Arial, Helvetica, sans-serif">1</text>
+  <rect x="39" y="48" width="22" height="2.6" rx="1.3" fill="#0B1230"/>
+  <text x="50" y="62" font-size="12" font-weight="900" fill="#0B1230" text-anchor="middle" font-family="DejaVu Sans, Arial, Helvetica, sans-serif">137</text>
+</svg>

@@ -96,11 +96,11 @@ public class MainActivity extends Activity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
         web = new WebView(this);
-        web.setBackgroundColor(Color.BLACK);
+        web.setBackgroundColor(Color.parseColor("#0B1230")); // Takım Orbital lacivert (açılırken siyah yerine)
         // Android 15+ uygulamayı ekranın tamamına (durum ve gezinme çubuklarının altına) çizer.
         // Sayfanın üstteki uyarı şeridi ve alttaki butonu çubukların altında kalmasın diye boşluk bırak.
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.BLACK);
+        root.setBackgroundColor(Color.parseColor("#0B1230"));
         root.addView(web, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         root.setOnApplyWindowInsetsListener((v, insets) -> {
             if (Build.VERSION.SDK_INT >= 30) {

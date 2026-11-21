@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#0B1230">
   <meta name="description" content="Görme engelli öğrenciler için sesli matematik asistanı">
   <title>Sesli Matematik Asistanı</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
@@ -14,8 +14,10 @@
 <body>
   <!-- Başlangıç ekranı: tarayıcılar ses ve kamerayı ancak bir dokunuştan sonra açar -->
   <button id="startScreen" class="start" aria-label="Sesli matematik asistanını başlatmak için ekrana dokun">
+    <img class="start-logo" src="icon.svg" alt="" aria-hidden="true" width="160" height="160">
     <span class="start-title">Sesli Matematik Asistanı</span>
     <span class="start-sub">Başlamak için ekrana dokun</span>
+    <span class="start-team" aria-hidden="true">TAKIM ORBITAL</span>
   </button>
 
   <main id="app" hidden>
