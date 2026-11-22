@@ -16,10 +16,12 @@ TEST = '/kaggle/temp/test'
 _bl = glob.glob('/kaggle/input/**/bl_*.jp*g', recursive=True)
 GERCEK = os.path.dirname(_bl[0]) if _bl else ''
 ADET = int(os.environ.get('ADET', '24000'))
-TUR = os.environ.get('TUR', '30')
+TUR = os.environ.get('TUR', '20')
+_b = glob.glob('/kaggle/input/**/baslangic_hucre.pt', recursive=True)
+BASLANGIC = _b[0] if _b else ''
 MODEL = '/kaggle/working/hucre_modeli.pt'
 
-shutil.copytree(KOD_KAYNAK, KOD, dirs_exist_ok=True, ignore=shutil.ignore_patterns('braillelens'))
+shutil.copytree(KOD_KAYNAK, KOD, dirs_exist_ok=True, ignore=shutil.ignore_patterns('braillelens', '*.pt'))
 
 
 def uret(parca):
@@ -41,7 +43,8 @@ if __name__ == '__main__':
         p.map(uret, parcalar)
     print(f'üretildi: {len(glob.glob(VERI + "/*.jpg"))} sayfa, {time.time() - t0:.0f} sn', flush=True)
     subprocess.run([sys.executable, os.path.join(KOD, 'egit.py'), '--veri', VERI, '--cikti', MODEL,
-                    '--tur', TUR, '--batch', '32', '--boyut', '384', '--lr', '3e-3'], check=True, cwd=KOD)
+                    '--tur', TUR, '--batch', '32', '--boyut', '384', '--lr', '1.5e-3' if BASLANGIC else '3e-3']
+                   + (['--baslangic', BASLANGIC] if BASLANGIC else []), check=True, cwd=KOD)
     calistir(['uctan_uca.py', '--model', MODEL, '--sentetik', TEST, '--adet', '100'], '/kaggle/working/olcum_sentetik.txt')
     if GERCEK:
         calistir(['uctan_uca.py', '--model', MODEL, '--gercek', GERCEK, '--gt', os.path.join(GERCEK, 'gt_bl.json')], '/kaggle/working/olcum_braillelens.txt')

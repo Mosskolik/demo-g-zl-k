@@ -68,6 +68,22 @@ def oku(model, gri, olcek=1.0, esik=0.3, on=True):
     return hc
 
 
+def oto_oku(model, gri, esik=0.3, hedef_aralik=float(os.environ.get('HEDEF_ARALIK', '34'))):
+    """Ölçeği gerçek etikete bakmadan seç: önce kaba okuma, komşu hücre aralığını ölç,
+    sonra görüntüyü hücre aralığı eğitimdeki tipik değere (~34 px) gelecek şekilde ölçekleyip yeniden oku."""
+    from scipy.spatial import cKDTree
+    s = 1.0
+    for _ in range(2):
+        hc = oku(model, gri, s, esik, on=False)
+        if len(hc) < 8: break
+        d, _ = cKDTree(hc[:, :2]).query(hc[:, :2], k=2)
+        c = float(np.median(d[:, 1])) * s  # ölçekli görüntüdeki aralık
+        yeni = float(np.clip(s * hedef_aralik / max(c, 1e-3), 0.3, 2.0))
+        if abs(yeni - s) / s < 0.1: break
+        s = yeni
+    return oku(model, gri, s, esik, on=False), round(s, 2)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--model', default=''); ap.add_argument('--sentetik', default=''); ap.add_argument('--gercek', default='')
@@ -76,7 +92,7 @@ def main():
     ap.add_argument('--adet', type=int, default=50)
     a = ap.parse_args()
     model = yukle(a.model) if a.model else None
-    H = T = 0; sayfalar = []
+    H = T = HO = 0; sayfalar = []
     if a.sentetik:
         for f in sorted(glob.glob(os.path.join(a.sentetik, '*.jpg')))[:a.adet]:
             js = json.load(open(f[:-4] + '.json'))
@@ -99,9 +115,12 @@ def main():
             for s in (0.5, 0.7, 1.0, 1.4):
                 h, t = karsilastir(satirlar, hucre_satirlari(oku(model, gri, s, a.esik, on=False)))
                 if en is None or h < en[0]: en = (h, t, s)
-            H += en[0]; T += en[1]; sayfalar.append((ad, round(1 - en[0] / max(1, en[1]), 3), en[2]))
+            hc, so = oto_oku(model, gri, a.esik)
+            ho, to = karsilastir(satirlar, hucre_satirlari(hc))
+            H += en[0]; T += en[1]; HO += ho; sayfalar.append((ad, 'en_iyi_ölçek', round(1 - en[0] / max(1, en[1]), 3), en[2], 'otomatik', round(1 - ho / max(1, to), 3), so))
     for s in sayfalar: print(*s)
     print(f'TOPLAM hücre doğruluğu: {1 - H / max(1, T):.3f}  ({T} hücre)')
+    if a.gercek: print(f'TOPLAM (ölçek otomatik seçilince): {1 - HO / max(1, T):.3f}')
 
 
 if __name__ == '__main__':

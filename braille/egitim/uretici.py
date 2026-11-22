@@ -129,18 +129,27 @@ def render_page(rng, out_size=512):
     bump(verso, (-0.9, -0.3))
     # --- gölgelendirme: ışık çoğunlukla sayfanın üstünden ---
     az = math.radians(rng.gauss(0, 25) if rng.random() < 0.85 else rng.uniform(-120, 120))  # 0 = üstten
-    el = math.radians(rng.uniform(25, 60) if rng.random() < 0.75 else rng.uniform(60, 80))  # tepeden ışık = soluk gölge
+    flas = rng.random() < 0.22 or os.environ.get('FLAS_ZORLA') == '1'  # flaş / önden ışık: gölge yok, nokta kenarları koyu halka
+    el = math.radians(rng.uniform(80, 89.5) if flas else (rng.uniform(25, 60) if rng.random() < 0.75 else rng.uniform(60, 80)))
     L = np.array([math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)], np.float32)
     k = rng.uniform(2.0, 5.0) * (16 / dot_r) ** 0.5
     gy, gx = np.gradient(hmap * k / max(1.0, dot_r / 4))
     n = np.sqrt(gx * gx + gy * gy + 1)
     shade = (-gx * L[0] - gy * L[1] + L[2]) / n
     shade = shade / L[2]  # düz kâğıt = 1
+    if flas:
+        # eğimli kenarlar kameraya ışığı daha az yansıtır (halka); nokta tepesi ve kâğıt parlak
+        egim = np.sqrt(gx * gx + gy * gy); en = egim.max() + 1e-6
+        halka = 1 - rng.uniform(0.2, 0.6) * np.clip(egim / en, 0, 1) ** rng.uniform(1.0, 2.5)  # ince koyu kenar
+        w = rng.uniform(0.4, 0.9)
+        shade = w * halka + (1 - w) * shade  # biraz yönlü gölge de kalsın
+        shade += rng.uniform(0.05, 0.25) * np.clip(hmap / (hmap.max() + 1e-6), 0, 1)  # parlak tepe
     # --- kâğıt ---
     base = np.array([rng.uniform(0.75, 0.98)] * 3, np.float32) * np.array([1, rng.uniform(0.95, 1), rng.uniform(0.85, 1)], np.float32)
     tex = sum(cv2.resize(np.random.default_rng(rng.randint(0, 1 << 30)).standard_normal((max(2, H // s), max(2, W // s))).astype(np.float32), (W, H)) * a
               for s, a in ((1, 0.015), (4, 0.02), (32, 0.03)))
     contrast = rng.uniform(0.35, 1.0) if rng.random() < 0.6 else rng.uniform(0.1, 0.35)
+    if flas: contrast = max(contrast, rng.uniform(0.5, 1.0))
     img = (1 + contrast * (shade - 1) + tex)[..., None] * base[None, None, :]
     # yumuşak gölgeler / ışık gradyanı (el, telefon, pencere)
     if rng.random() < 0.6:
