@@ -94,7 +94,7 @@ def render_page(rng, out_size=512):
             code = ord(ch) - 0x2800
             x0 = margin_x + (ci + indent) * cell_w
             y0 = margin_y + li * line_h
-            if code: cells.append((x0 + dot_gap / 2, y0 + dot_gap, code))
+            if code: cells.append((x0 + dot_gap / 2, y0 + dot_gap, code, li))
             for d in range(6):
                 if code >> d & 1:
                     col, row = (0 if d < 3 else 1), d % 3
@@ -122,13 +122,14 @@ def render_page(rng, out_size=512):
             amp = rng.uniform(*amp_range); r = dot_r * rng.uniform(0.85, 1.15)
             g = np.exp(-((xx - (x - ix)) ** 2 + (yy - (y - iy)) ** 2) / (2 * (r * 0.62) ** 2))
             hmap[iy - rr:iy + rr + 1, ix - rr:ix + rr + 1] += amp * g
-    bump(recto, (0.5, 1.2))
+    soluk = rng.random() < 0.3  # aşınmış / az kabarık noktalar
+    bump(recto, (0.2, 0.6) if soluk else (0.5, 1.2))
     if rng.random() < 0.05:  # bazen bazı noktalar ezilmiş
         hmap *= 0.7
     bump(verso, (-0.9, -0.3))
     # --- gölgelendirme: ışık çoğunlukla sayfanın üstünden ---
     az = math.radians(rng.gauss(0, 25) if rng.random() < 0.85 else rng.uniform(-120, 120))  # 0 = üstten
-    el = math.radians(rng.uniform(25, 60))
+    el = math.radians(rng.uniform(25, 60) if rng.random() < 0.75 else rng.uniform(60, 80))  # tepeden ışık = soluk gölge
     L = np.array([math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)], np.float32)
     k = rng.uniform(2.0, 5.0) * (16 / dot_r) ** 0.5
     gy, gx = np.gradient(hmap * k / max(1.0, dot_r / 4))
@@ -139,7 +140,7 @@ def render_page(rng, out_size=512):
     base = np.array([rng.uniform(0.75, 0.98)] * 3, np.float32) * np.array([1, rng.uniform(0.95, 1), rng.uniform(0.85, 1)], np.float32)
     tex = sum(cv2.resize(np.random.default_rng(rng.randint(0, 1 << 30)).standard_normal((max(2, H // s), max(2, W // s))).astype(np.float32), (W, H)) * a
               for s, a in ((1, 0.015), (4, 0.02), (32, 0.03)))
-    contrast = rng.uniform(0.35, 1.0)
+    contrast = rng.uniform(0.35, 1.0) if rng.random() < 0.6 else rng.uniform(0.1, 0.35)
     img = (1 + contrast * (shade - 1) + tex)[..., None] * base[None, None, :]
     # yumuşak gölgeler / ışık gradyanı (el, telefon, pencere)
     if rng.random() < 0.6:
@@ -172,13 +173,12 @@ def render_page(rng, out_size=512):
         keep = (p[:, 0] >= 0) & (p[:, 0] < S) & (p[:, 1] >= 0) & (p[:, 1] < S)
         return p[keep]
     dots = tp(recto)
-    cell_pts = tp([(x, y) for x, y, _ in cells]) if cells else np.zeros((0, 2))
     # hücre kodlarını da taşı (eğitimde gerekmez, değerlendirmede işe yarar)
     cell_list = []
     if cells:
-        p = cv2.perspectiveTransform(np.float32([(x, y) for x, y, _ in cells])[None], M)[0]
-        for (x, y), (_, _, code) in zip(p, cells):
-            if 0 <= x < S and 0 <= y < S: cell_list.append([float(x), float(y), int(code)])
+        p = cv2.perspectiveTransform(np.float32([c_[:2] for c_ in cells])[None], M)[0]
+        for (x, y), (_, _, code, li) in zip(p, cells):
+            if 0 <= x < S and 0 <= y < S: cell_list.append([round(float(x), 2), round(float(y), 2), int(code), int(li)])
     # --- foto bozulmaları ---
     if rng.random() < 0.7:
         out = cv2.GaussianBlur(out, (0, 0), rng.uniform(0.3, 1.6))
@@ -187,8 +187,12 @@ def render_page(rng, out_size=512):
         rot = cv2.getRotationMatrix2D((k / 2 - 0.5, k / 2 - 0.5), rng.uniform(0, 180), 1)
         out = cv2.filter2D(out, -1, cv2.warpAffine(ker, rot, (k, k)))
     out = out + np.random.default_rng(rng.randint(0, 1 << 30)).normal(0, rng.uniform(0.005, 0.04), out.shape).astype(np.float32)
+    if rng.random() < 0.25:  # aşırı pozlama: kâğıt beyaza yakın, kontrast sıkışık
+        out = 1 - (1 - out) * rng.uniform(0.35, 0.7)
+    elif rng.random() < 0.15:  # karanlık çekim
+        out = out * rng.uniform(0.35, 0.7)
     out = (np.clip(out, 0, 1) * 255).astype(np.uint8)
-    return out, dots, cell_list, dot_r * scale
+    return out, dots, cell_list, dot_r * scale, dot_gap * scale
 
 
 def main():
@@ -198,10 +202,10 @@ def main():
     for i in range(count):
         rng = random.Random(seed * 1_000_003 + i)
         np.random.seed((seed * 7919 + i) % (2 ** 32))
-        img, dots, cells, r = render_page(rng)
+        img, dots, cells, r, ara = render_page(rng)
         q = rng.randint(40, 95)
         cv2.imwrite(os.path.join(out_dir, f'{seed:02d}_{i:05d}.jpg'), cv2.cvtColor(img, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, q])
-        json.dump({'dots': dots.round(2).tolist(), 'cells': cells, 'dot_r': round(float(r), 2)},
+        json.dump({'dots': dots.round(2).tolist(), 'cells': cells, 'dot_r': round(float(r), 2), 'dot_gap': round(float(ara), 2)},
                   open(os.path.join(out_dir, f'{seed:02d}_{i:05d}.json'), 'w'))
 
 

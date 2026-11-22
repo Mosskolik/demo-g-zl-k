@@ -3,12 +3,13 @@ Nokta bulucuyu ölçer.
   python degerlendir.py --model model.pt --gercek <klasör> [--sentetik <klasör>]
 Gerçek veri: BrailleLens (labelme .json, etiket = nokta numaraları "236") ve Angelina (.labeled.csv: x1;y1;x2;y2;kod, normalize, kod bit maskesi).
 Hücre kutularından nokta GT'si türetilir; tahmin noktaları GT'ye eşlenir (yarıçap = 0.3 · hücre içi aralık).
+Kesinlik sadece etiketli hücre kutularının çevresinde ölçülür (sayfalarda etiketlenmemiş gerçek hücreler var).
 Ayrıca "kutu verildiğinde hücre doğruluğu": GT hücre kutusundaki tahmin noktalarından 6 bitlik kod çıkarılıp karşılaştırılır.
 """
 import argparse, glob, json, os
 import numpy as np, cv2, torch
 from scipy.spatial import cKDTree
-from model import NoktaAgi, tepeler
+from model import tepeler, on_isle, yukle
 
 
 def kutular(f):
@@ -44,11 +45,21 @@ def nokta_yeri(x1, y1, x2, y2, n):
 @torch.no_grad()
 def tahmin(model, gri, olcek, esik):
     h, w = gri.shape
-    im = cv2.resize(gri, (int(w * olcek) // 8 * 8, int(h * olcek) // 8 * 8), interpolation=cv2.INTER_AREA)
+    im = cv2.resize(gri, (int(w * olcek) // 16 * 16, int(h * olcek) // 16 * 16), interpolation=cv2.INTER_AREA)
     x = torch.from_numpy(im.astype(np.float32)[None, None] / 255)
     t = tepeler(model(x), esik=esik).numpy()
     t[:, 0] *= w / im.shape[1]; t[:, 1] *= h / im.shape[0]
     return t
+
+
+def etiketli_alanda(pr, bx, pay=0.25):
+    """Veri setlerinde sayfadaki her hücre etiketlenmemiş; kesinliği sadece etiketli hücre kutularının (biraz genişletilmiş) içinde ölç."""
+    if len(pr) == 0: return pr
+    ic = np.zeros(len(pr), bool)
+    for x1, y1, x2, y2, _ in bx:
+        dx, dy = (x2 - x1) * pay, (y2 - y1) * pay
+        ic |= (pr[:, 0] >= x1 - dx) & (pr[:, 0] <= x2 + dx) & (pr[:, 1] >= y1 - dy) & (pr[:, 1] <= y2 + dy)
+    return pr[ic]
 
 
 def olc(gt_pts, pr, yaricap):
@@ -65,20 +76,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--model', required=True); ap.add_argument('--gercek', required=True)
     ap.add_argument('--olcekler', default='0.5,0.7,1.0,1.4'); ap.add_argument('--esik', type=float, default=0.3)
-    ap.add_argument('--rapor', default='')
+    ap.add_argument('--rapor', default=''); ap.add_argument('--on_isle', type=int, default=1)
     a = ap.parse_args()
-    model = NoktaAgi(); model.load_state_dict(torch.load(a.model, map_location='cpu')); model.eval()
+    model = yukle(a.model)
     dosyalar = sorted(f for f in glob.glob(os.path.join(a.gercek, '*')) if f.lower().endswith(('.jpg', '.jpeg', '.png')) and kutular(f))
     olcekler = [float(s) for s in a.olcekler.split(',')]
     sonuc = {}
     for f in dosyalar:
         bx = kutular(f)
         gri = cv2.imread(f, cv2.IMREAD_GRAYSCALE)
+        if a.on_isle: gri = on_isle(gri)
         gt = np.array([nokta_yeri(*b[:4], n) for b in bx for n in b[4]])
         ara = np.median([(b[2] - b[0]) / 2 for b in bx])  # hücre içi nokta aralığı ≈ kutu genişliği / 2
         en_iyi = None
         for s in olcekler:
-            pr = tahmin(model, gri, s, a.esik)
+            pr = etiketli_alanda(tahmin(model, gri, s, a.esik), bx)
             tp, fn, fp = olc(gt, pr, 0.4 * ara)
             f1 = 2 * tp / max(1, 2 * tp + fn + fp)
             # kutu verildiğinde hücre doğruluğu
