@@ -64,18 +64,21 @@ def main():
     sent = sorted(glob.glob(os.path.join(a.veri, '*.jpg')))
     gercek = sorted(glob.glob(os.path.join(a.gercek, '*.jpg')) + glob.glob(os.path.join(a.gercek, '*.jpeg'))) if a.gercek else []
     dosyalar = sent + gercek * max(1, len(sent) // max(1, 10 * len(gercek))) if gercek else sent  # gerçek veriyi ağırlıklandır
-    dl = DataLoader(Veri(dosyalar, a.boyut), batch_size=a.batch, shuffle=True, num_workers=min(4, os.cpu_count() or 1), drop_last=True)
+    dl = DataLoader(Veri(dosyalar, a.boyut), batch_size=a.batch, shuffle=True, num_workers=min(4, os.cpu_count() or 1), drop_last=True, pin_memory=dev == 'cuda', persistent_workers=True)
     model = NoktaAgi().to(dev)
     if a.baslangic: model.load_state_dict(torch.load(a.baslangic, map_location=dev))
     opt = torch.optim.AdamW(model.parameters(), lr=a.lr, weight_decay=1e-4)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, max_lr=a.lr, total_steps=a.tur * len(dl))
+    scaler = torch.amp.GradScaler(enabled=dev == 'cuda')
     print(f'cihaz={dev} sentetik={len(sent)} gerçek={len(gercek)} parametre={sum(p.numel() for p in model.parameters())/1e6:.2f}M', flush=True)
     for ep in range(a.tur):
         model.train(); t0 = time.time(); top = 0
         for x, y in dl:
             x, y = x.to(dev), y.to(dev)
-            loss = odak_kaybi(model(x), y)
-            opt.zero_grad(); loss.backward(); opt.step(); sched.step(); top += loss.item()
+            with torch.autocast(dev, dtype=torch.bfloat16 if dev == 'cpu' else torch.float16, enabled=dev == 'cuda'):
+                cikti = model(x)
+            loss = odak_kaybi(cikti.float(), y)
+            opt.zero_grad(); scaler.scale(loss).backward(); scaler.step(opt); scaler.update(); sched.step(); top += loss.item()
         print(f'tur {ep + 1}/{a.tur} kayıp {top / len(dl):.4f} ({time.time() - t0:.0f} sn)', flush=True)
         torch.save(model.state_dict(), a.cikti)
 

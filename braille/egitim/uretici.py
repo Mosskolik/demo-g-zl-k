@@ -34,20 +34,31 @@ def load_corpus():
 
 
 CORPUS = load_corpus()
+_bj = os.path.join(HERE, 'derlem_braille.json')
+BRAILLE_SOZLUK = json.load(open(_bj, encoding='utf-8')) if os.path.exists(_bj) else {}
+
+
+def cevir(metin, table):
+    if louis is not None:
+        return louis.translateString(['unicode.dis', table], metin)
+    # liblouis yok: önceden çevrilmiş sözcüklerden kur (Kaggle)
+    i = 0 if table == 'tr-g1.ctb' else 1
+    return '\u2800'.join(BRAILLE_SOZLUK[w][i] for w in metin.split())
 
 
 def braille_line(rng, max_cells):
     """Bir satırlık Unicode Braille hücre dizisi (boşluk = U+2800)."""
     kind = rng.random()
-    if kind < 0.75 and louis is not None:
+    if kind < 0.75 and (louis is not None or BRAILLE_SOZLUK):
         words, out = [], ''
         while True:
             w = rng.choice(CORPUS)
             if rng.random() < 0.12: w = str(rng.randint(0, 999))
+            if louis is None and w not in BRAILLE_SOZLUK: continue
             cand = ' '.join(words + [w])
             table = 'tr-g1.ctb' if rng.random() < 0.7 else 'tr-g2.ctb'
             try:
-                b = louis.translateString(['unicode.dis', table], cand)
+                b = cevir(cand, table)
             except Exception:
                 b = ''
             if len(b) > max_cells:
