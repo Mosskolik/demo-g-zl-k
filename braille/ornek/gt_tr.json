@@ -1,0 +1,66 @@
+{
+ "tr_sayfa1": {
+  "text": [
+   "1. Bir torbada 3 kırmızı ve",
+   "5 mavi bilye vardır. Torbadan",
+   "rastgele bir bilye çekiliyor.",
+   "Çekilen bilyenin kırmızı olma",
+   "olasılığı kaçtır?",
+   "2. Bir karenin bir kenarı 4",
+   "santimetredir. Karenin alanı",
+   "kaç santimetrekaredir?"
+  ],
+  "braille": [
+   "⠼⠁⠲⠀⠠⠃⠊⠗⠀⠞⠕⠗⠃⠁⠙⠁⠀⠼⠉⠀⠅⠔⠗⠍⠔⠵⠔⠀⠧⠑",
+   "⠼⠑⠀⠍⠁⠧⠊⠀⠃⠊⠇⠽⠑⠀⠧⠁⠗⠙⠔⠗⠲⠀⠠⠞⠕⠗⠃⠁⠙⠁⠝",
+   "⠗⠁⠎⠞⠛⠑⠇⠑⠀⠃⠊⠗⠀⠃⠊⠇⠽⠑⠀⠡⠑⠅⠊⠇⠊⠽⠕⠗⠲",
+   "⠠⠡⠑⠅⠊⠇⠑⠝⠀⠃⠊⠇⠽⠑⠝⠊⠝⠀⠅⠔⠗⠍⠔⠵⠔⠀⠕⠇⠍⠁",
+   "⠕⠇⠁⠎⠔⠇⠔⠣⠔⠀⠅⠁⠡⠞⠔⠗⠦",
+   "⠼⠃⠲⠀⠠⠃⠊⠗⠀⠅⠁⠗⠑⠝⠊⠝⠀⠃⠊⠗⠀⠅⠑⠝⠁⠗⠔⠀⠼⠙",
+   "⠎⠁⠝⠞⠊⠍⠑⠞⠗⠑⠙⠊⠗⠲⠀⠠⠅⠁⠗⠑⠝⠊⠝⠀⠁⠇⠁⠝⠔",
+   "⠅⠁⠡⠀⠎⠁⠝⠞⠊⠍⠑⠞⠗⠑⠅⠁⠗⠑⠙⠊⠗⠦"
+  ]
+ },
+ "tr_sayfa2": {
+  "text": [
+   "3. Ali 12 yaşında, kardeşi",
+   "ondan 5 yaş küçüktür. Kardeşi",
+   "kaç yaşındadır?",
+   "4. Bir sınıfta 28 öğrenci",
+   "vardır. Öğrencilerin yarısı",
+   "kızdır. Sınıfta kaç erkek",
+   "öğrenci vardır?"
+  ],
+  "braille": [
+   "⠼⠉⠲⠀⠠⠁⠇⠊⠀⠼⠁⠃⠀⠽⠁⠩⠔⠝⠙⠁⠂⠀⠅⠁⠗⠙⠑⠩⠊",
+   "⠕⠝⠙⠁⠝⠀⠼⠑⠀⠽⠁⠩⠀⠅⠳⠡⠳⠅⠞⠳⠗⠲⠀⠠⠅⠁⠗⠙⠑⠩⠊",
+   "⠅⠁⠡⠀⠽⠁⠩⠔⠝⠙⠁⠙⠔⠗⠦",
+   "⠼⠙⠲⠀⠠⠃⠊⠗⠀⠎⠔⠝⠔⠋⠞⠁⠀⠼⠃⠓⠀⠪⠣⠗⠑⠝⠉⠊",
+   "⠧⠁⠗⠙⠔⠗⠲⠀⠠⠪⠣⠗⠑⠝⠉⠊⠇⠑⠗⠊⠝⠀⠽⠁⠗⠔⠎⠔",
+   "⠅⠔⠵⠙⠔⠗⠲⠀⠠⠎⠔⠝⠔⠋⠞⠁⠀⠅⠁⠡⠀⠑⠗⠅⠑⠅",
+   "⠪⠣⠗⠑⠝⠉⠊⠀⠧⠁⠗⠙⠔⠗⠦"
+  ]
+ },
+ "tr_sayfa3": {
+  "text": [
+   "5. Üçgenin iç açıları toplamı",
+   "kaç derecedir?",
+   "6. Bir sayının üç katının dört",
+   "eksiği on yedidir. Bu sayı",
+   "kaçtır?",
+   "7. Çiğdem pazardan iki kilo",
+   "şeftali aldı. Ödediği para kaç",
+   "liradır?"
+  ],
+  "braille": [
+   "⠼⠑⠲⠀⠠⠳⠡⠛⠑⠝⠊⠝⠀⠊⠡⠀⠁⠡⠔⠇⠁⠗⠔⠀⠞⠕⠏⠇⠁⠍⠔",
+   "⠅⠁⠡⠀⠙⠑⠗⠑⠉⠑⠙⠊⠗⠦",
+   "⠼⠋⠲⠀⠠⠃⠊⠗⠀⠎⠁⠽⠔⠝⠔⠝⠀⠳⠡⠀⠅⠁⠞⠔⠝⠔⠝⠀⠙⠪⠗⠞",
+   "⠑⠅⠎⠊⠣⠊⠀⠕⠝⠀⠽⠑⠙⠊⠙⠊⠗⠲⠀⠠⠃⠥⠀⠎⠁⠽⠔",
+   "⠅⠁⠡⠞⠔⠗⠦",
+   "⠼⠛⠲⠀⠠⠡⠊⠣⠙⠑⠍⠀⠏⠁⠵⠁⠗⠙⠁⠝⠀⠊⠅⠊⠀⠅⠊⠇⠕",
+   "⠩⠑⠋⠞⠁⠇⠊⠀⠁⠇⠙⠔⠲⠀⠠⠪⠙⠑⠙⠊⠣⠊⠀⠏⠁⠗⠁⠀⠅⠁⠡",
+   "⠇⠊⠗⠁⠙⠔⠗⠦"
+  ]
+ }
+}
