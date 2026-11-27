@@ -101,11 +101,13 @@ def render_page(rng, out_size=512):
                     recto.append((x0 + col * dot_gap, y0 + row * dot_gap))
     # arka yüz (çift taraflı baskı): satırların arasına kaymış çökük noktalar
     verso = []
-    if rng.random() < 0.6:
-        off_y = line_h * rng.uniform(0.35, 0.65); off_x = rng.uniform(0, cell_w)
-        for li in range(n_lines):
+    if rng.random() < 0.7:
+        # gerçek çift taraflı sayfalarda arka yüz satırı ön yüz satırına çok yakın da düşebilir
+        off_y = line_h * rng.uniform(0.15, 0.85); off_x = rng.uniform(0, cell_w)
+        yogunluk = rng.uniform(0.35, 0.8)
+        for li in range(-1, n_lines):
             for ci in range(max_cells):
-                if rng.random() < 0.55:
+                if rng.random() < yogunluk:
                     code = rng.randint(1, 63)
                     for d in range(6):
                         if code >> d & 1:
@@ -122,14 +124,14 @@ def render_page(rng, out_size=512):
             amp = rng.uniform(*amp_range); r = dot_r * rng.uniform(0.85, 1.15)
             g = np.exp(-((xx - (x - ix)) ** 2 + (yy - (y - iy)) ** 2) / (2 * (r * 0.62) ** 2))
             hmap[iy - rr:iy + rr + 1, ix - rr:ix + rr + 1] += amp * g
-    soluk = rng.random() < 0.3  # aşınmış / az kabarık noktalar
+    flas = rng.random() < 0.15 or os.environ.get('FLAS_ZORLA') == '1'  # flaş / önden ışık: gölge yok, nokta kenarları koyu halka
+    soluk = (not flas) and rng.random() < 0.3  # aşınmış / az kabarık noktalar
     bump(recto, (0.2, 0.6) if soluk else (0.5, 1.2))
     if rng.random() < 0.05:  # bazen bazı noktalar ezilmiş
         hmap *= 0.7
-    bump(verso, (-0.9, -0.3))
+    bump(verso, (-1.2, -0.3))
     # --- gölgelendirme: ışık çoğunlukla sayfanın üstünden ---
     az = math.radians(rng.gauss(0, 25) if rng.random() < 0.85 else rng.uniform(-120, 120))  # 0 = üstten
-    flas = rng.random() < 0.22 or os.environ.get('FLAS_ZORLA') == '1'  # flaş / önden ışık: gölge yok, nokta kenarları koyu halka
     el = math.radians(rng.uniform(80, 89.5) if flas else (rng.uniform(25, 60) if rng.random() < 0.75 else rng.uniform(60, 80)))
     L = np.array([math.sin(az) * math.cos(el), -math.cos(az) * math.cos(el), math.sin(el)], np.float32)
     k = rng.uniform(2.0, 5.0) * (16 / dot_r) ** 0.5
@@ -196,7 +198,7 @@ def render_page(rng, out_size=512):
         rot = cv2.getRotationMatrix2D((k / 2 - 0.5, k / 2 - 0.5), rng.uniform(0, 180), 1)
         out = cv2.filter2D(out, -1, cv2.warpAffine(ker, rot, (k, k)))
     out = out + np.random.default_rng(rng.randint(0, 1 << 30)).normal(0, rng.uniform(0.005, 0.04), out.shape).astype(np.float32)
-    if rng.random() < 0.25:  # aşırı pozlama: kâğıt beyaza yakın, kontrast sıkışık
+    if not flas and rng.random() < 0.25:  # aşırı pozlama: kâğıt beyaza yakın, kontrast sıkışık
         out = 1 - (1 - out) * rng.uniform(0.35, 0.7)
     elif rng.random() < 0.15:  # karanlık çekim
         out = out * rng.uniform(0.35, 0.7)
