@@ -58,19 +58,20 @@ def yukle(yol):
     return m
 
 
-def odak_kaybi(logit, hedef, alpha=2, beta=4):
-    """CenterNet odak kaybı: hedef = merkezlerde 1 olan Gauss tepeli harita."""
+def odak_kaybi(logit, hedef, alpha=2, beta=4, gecerli=None):
+    """CenterNet odak kaybı: hedef = merkezlerde 1 olan Gauss tepeli harita. gecerli: kaybın sayılacağı bölge (0/1)."""
     p = torch.sigmoid(logit).clamp(1e-4, 1 - 1e-4)
     pos = hedef.eq(1).float(); neg = 1 - pos
+    if gecerli is not None: pos = pos * gecerli; neg = neg * gecerli
     pos_loss = -torch.log(p) * (1 - p) ** alpha * pos
     neg_loss = -torch.log(1 - p) * p ** alpha * (1 - hedef) ** beta * neg
     n = pos.sum().clamp(min=1)
     return (pos_loss.sum() + neg_loss.sum()) / n
 
 
-def toplam_kayip(cikti, nokta_h, hucre_h, bit_h, bit_maske):
-    k_nokta = odak_kaybi(cikti[:, 0:1], nokta_h)
-    k_hucre = odak_kaybi(cikti[:, 1:2], hucre_h)
+def toplam_kayip(cikti, nokta_h, hucre_h, bit_h, bit_maske, gecerli=None):
+    k_nokta = odak_kaybi(cikti[:, 0:1], nokta_h, gecerli=gecerli)
+    k_hucre = odak_kaybi(cikti[:, 1:2], hucre_h, gecerli=gecerli)
     bce = F.binary_cross_entropy_with_logits(cikti[:, 2:8], bit_h, reduction='none')
     k_bit = (bce * bit_maske).sum() / (bit_maske.sum() * 6).clamp(min=1)
     return k_nokta + k_hucre + 4 * k_bit, (k_nokta.item(), k_hucre.item(), k_bit.item())
