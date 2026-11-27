@@ -124,7 +124,7 @@ def render_page(rng, out_size=512):
             amp = rng.uniform(*amp_range); r = dot_r * rng.uniform(0.85, 1.15)
             g = np.exp(-((xx - (x - ix)) ** 2 + (yy - (y - iy)) ** 2) / (2 * (r * 0.62) ** 2))
             hmap[iy - rr:iy + rr + 1, ix - rr:ix + rr + 1] += amp * g
-    flas = rng.random() < 0.15 or os.environ.get('FLAS_ZORLA') == '1'  # flaş / önden ışık: gölge yok, nokta kenarları koyu halka
+    flas = rng.random() < float(os.environ.get('FLAS_ORAN', '0')) or os.environ.get('FLAS_ZORLA') == '1'  # flaş / önden ışık: gölge yok, nokta kenarları koyu halka
     soluk = (not flas) and rng.random() < 0.3  # aşınmış / az kabarık noktalar
     bump(recto, (0.2, 0.6) if soluk else (0.5, 1.2))
     if rng.random() < 0.05:  # bazen bazı noktalar ezilmiş
