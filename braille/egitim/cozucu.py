@@ -94,6 +94,30 @@ def coz(pts):
     return out
 
 
+def parcalari_birlestir(satirlar, q, c, en_bosluk=20, dy_esik=0.35):
+    """Aynı hizadaki satır parçalarını birleştirir (kaçan hücre ya da uzun boşluk satırı bölmüş olabilir).
+    A'nın sonu ile B'nin başı aynı yükseklikte ve B, A'nın sağında başlıyorsa A+B tek satır olur."""
+    satirlar = [list(z) for z in satirlar]
+    while True:
+        en = None
+        for i, A in enumerate(satirlar):
+            ax, ay = q[A[-1]]
+            for j, B in enumerate(satirlar):
+                if i == j: continue
+                bx, by = q[B[0]]
+                dx = bx - ax
+                if dx < 0.4 * c or dx > en_bosluk * c: continue
+                if q[B, 0].min() < q[A, 0].max(): continue  # x aralıkları çakışmasın
+                # yükseklik: uçlar ve iki parçanın ortalaması birlikte tutmalı
+                if abs(by - ay) > dy_esik * c or abs(np.median(q[B, 1]) - np.median(q[A, 1])) > dy_esik * c + 0.02 * dx: continue
+                m = dx + 5 * abs(by - ay)
+                if en is None or m < en[0]: en = (m, i, j)
+        if en is None: return satirlar
+        _, i, j = en
+        satirlar[i] = satirlar[i] + satirlar[j]
+        del satirlar[j]
+
+
 def hucre_satirlari(h, bit_esik=0.5, guven_ver=False):
     """
     Model hücre çıktısından satırlar. h: N×9 (x, y, güven, p1..p6).
@@ -131,6 +155,7 @@ def hucre_satirlari(h, bit_esik=0.5, guven_ver=False):
             while sonraki[z[-1]] >= 0 and sonraki[z[-1]] not in gor:
                 z.append(sonraki[z[-1]]); gor.add(z[-1])
             satirlar.append(z)
+        satirlar = parcalari_birlestir(satirlar, q, c)
         satirlar.sort(key=lambda z: (np.mean(q[z, 1]), q[z[0], 0]))
         pts = q
     out = []
