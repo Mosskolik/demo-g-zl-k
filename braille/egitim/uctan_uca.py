@@ -90,6 +90,7 @@ def main():
     ap.add_argument('--gt', default=''); ap.add_argument('--kusursuz', action='store_true')
     ap.add_argument('--olcek', type=float, default=1.0); ap.add_argument('--esik', type=float, default=0.3)
     ap.add_argument('--adet', type=int, default=50)
+    ap.add_argument('--sadece_oto', action='store_true', help='sadece otomatik ölçekle ölç (hızlı)')
     a = ap.parse_args()
     model = yukle(a.model) if a.model else None
     H = T = HO = 0; sayfalar = []
@@ -112,11 +113,12 @@ def main():
             if not os.path.exists(f): continue
             gri = on_isle(cv2.imread(f, cv2.IMREAD_GRAYSCALE))
             en = None
-            for s in (0.5, 0.7, 1.0, 1.4):
+            for s in (() if a.sadece_oto else (0.5, 0.7, 1.0, 1.4)):
                 h, t = karsilastir(satirlar, hucre_satirlari(oku(model, gri, s, a.esik, on=False)))
                 if en is None or h < en[0]: en = (h, t, s)
             hc, so = oto_oku(model, gri, a.esik)
             ho, to = karsilastir(satirlar, hucre_satirlari(hc))
+            if en is None: en = (ho, to, so)
             H += en[0]; T += en[1]; HO += ho; sayfalar.append((ad, 'en_iyi_ölçek', round(1 - en[0] / max(1, en[1]), 3), en[2], 'otomatik', round(1 - ho / max(1, to), 3), so))
     for s in sayfalar: print(*s)
     print(f'TOPLAM hücre doğruluğu: {1 - H / max(1, T):.3f}  ({T} hücre)')
