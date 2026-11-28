@@ -68,9 +68,9 @@ def oku(model, gri, olcek=1.0, esik=0.3, on=True):
     return hc
 
 
-def oto_oku(model, gri, esik=0.3, hedef_aralik=float(os.environ.get('HEDEF_ARALIK', '34'))):
+def oto_oku(model, gri, esik=0.3, hedef_aralik=float(os.environ.get('HEDEF_ARALIK', '30'))):
     """Ölçeği gerçek etikete bakmadan seç: önce kaba okuma, komşu hücre aralığını ölç,
-    sonra görüntüyü hücre aralığı eğitimdeki tipik değere (~34 px) gelecek şekilde ölçekleyip yeniden oku."""
+    sonra görüntüyü hücre aralığı eğitimdeki tipik değere (~30 px) gelecek şekilde ölçekleyip yeniden oku."""
     from scipy.spatial import cKDTree
     s = 1.0
     for _ in range(2):
