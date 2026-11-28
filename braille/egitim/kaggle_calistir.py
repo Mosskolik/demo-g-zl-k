@@ -15,8 +15,14 @@ VERI = '/kaggle/temp/sentetik'
 TEST = '/kaggle/temp/test'
 _bl = glob.glob('/kaggle/input/**/gt_bl.json', recursive=True)  # test sayfaları (eğitimde kullanılmaz)
 GERCEK = os.path.dirname(_bl[0]) if _bl else ''
-ADET = int(os.environ.get('ADET', '24000'))
-TUR = os.environ.get('TUR', '20')
+# isteğe bağlı ayar dosyası (Kaggle'da ortam değişkeni verilemediği için): {"ADET": .., "TUR": .., "GERCEK_ORAN": .., "LR": ..}
+import json
+_a = glob.glob('/kaggle/input/**/ayar.json', recursive=True)
+AYAR = json.load(open(_a[0])) if _a else {}
+ADET = int(os.environ.get('ADET', AYAR.get('ADET', 24000)))
+TUR = str(os.environ.get('TUR', AYAR.get('TUR', 20)))
+GERCEK_ORAN = str(os.environ.get('GERCEK_ORAN', AYAR.get('GERCEK_ORAN', 0.3)))
+LR = str(AYAR.get('LR', ''))
 _b = glob.glob('/kaggle/input/**/baslangic_hucre.pt', recursive=True)
 BASLANGIC = _b[0] if _b else ''
 MODEL = '/kaggle/working/hucre_modeli.pt'
@@ -52,9 +58,9 @@ if __name__ == '__main__':
         p.map(uret, parcalar)
     print(f'üretildi: {len(glob.glob(VERI + "/*.jpg"))} sayfa, {time.time() - t0:.0f} sn', flush=True)
     subprocess.run([sys.executable, os.path.join(KOD, 'egit.py'), '--veri', VERI, '--cikti', MODEL,
-                    '--tur', TUR, '--batch', '32', '--boyut', '384', '--lr', '1e-3' if BASLANGIC else '3e-3']
+                    '--tur', TUR, '--batch', '32', '--boyut', '384', '--lr', LR or ('1e-3' if BASLANGIC else '3e-3')]
                    + (['--baslangic', BASLANGIC] if BASLANGIC else [])
-                   + (['--gercek_liste', GERCEK_LISTE, '--gercek_oran', os.environ.get('GERCEK_ORAN', '0.3')] if GERCEK_LISTE else []),
+                   + (['--gercek_liste', GERCEK_LISTE, '--gercek_oran', GERCEK_ORAN] if GERCEK_LISTE else []),
                    check=True, cwd=KOD)
     calistir(['uctan_uca.py', '--model', MODEL, '--sentetik', TEST, '--adet', '100'], '/kaggle/working/olcum_sentetik.txt')
     if GERCEK:
