@@ -30,3 +30,28 @@
 ## Karar ve sonraki adım
 - **Ana model: 5. model.** Model dosyası Kaggle not defterinin 6. sürüm çıktısında (`hucre_modeli.pt`, 3,7 MB). Angelina verisiyle eğitildiği için depoya konmadı.
 - **6. eğitim başlatıldı (05:11 TR):** 5. modelden devam, gerçek fotoğraf oranı %50, 12.000 sentetik sayfa, öğrenme hızı 5e-4. Gerekçe: en büyük kazanç gerçek fotoğraflardan geldi; payını artırmak mantıklı sonraki adım.
+
+---
+
+## 6. eğitim: gerçek fotoğraf oranı %50
+
+*28 Kasım 2026, 05:11–08:50 TR. 5. modelden devam, gerçek fotoğraf oranı %50, 12.000 sentetik sayfa, öğrenme hızı 5e-4, 20 tur.*
+
+| Test seti (eğitimde kullanılmadı) | 1. model | 5. model | **6. model** |
+|---|---|---|---|
+| 13 gerçek fotoğraf | %88,4 | %92,6 | **%93,2** |
+| ↳ yeni ölçek seçimiyle | — | — | **%93,7** |
+| Angelina doğrulama + test (99 fotoğraf, 27.712 hücre) | %92,9 | %95,8 | **%96,0** |
+| ↳ yeni ölçek seçimiyle | — | — | **%96,1** |
+| ↳ %99 ve üstü okunan sayfa | 22 | 58 | **61** |
+| ↳ %95 ve üstü okunan sayfa | — | — | **83** |
+| ↳ ortanca sayfa | %97,6 | %99,4 | **%99,5** |
+
+**Yeni ölçek seçimi (eğitimsiz düzeltme):** Önce birkaç büyütme oranında (0,6–2,2 kat) okuyup modelin en emin olduğu oran seçiliyor, sonra hücre aralığına göre ince ayar yapılıyor. Uzaktan çekilmiş, hücreleri küçük sayfalarda faydalı.
+
+**Karar: 6. model ana model. Şimdilik yeni eğitim başlatılmadı.**
+- 5. modelden 6. modele kazanç küçük (+0,2 ile +0,6 puan). Aynı yöntemle devam etmek ekran kartı süresini boşa harcar.
+- Kalan hataların çoğu **zor fotoğraflarda**: tam karşıdan, gölgesiz ışıkta çekilmiş, çok soluk sayfalar (en kötü sayfa %1) ve sayfanın tamamını uzaktan çeken, hücreleri çok küçük fotoğraflar. Bunlar için doğru çözüm uygulamada **fotoğraf rehberliği**: model emin değilse "ışığı yandan ver", "biraz yaklaş" demek.
+- Bundan sonraki büyük kazanç için gereken şey **gerçek Türkçe Braille fotoğrafları**.
+
+Model dosyaları: Kaggle not defteri `orbital-braille-hucre`, sürüm 7 çıktısı (6. model). Angelina verisiyle eğitildiği için depoya konmadı.
