@@ -68,20 +68,32 @@ def oku(model, gri, olcek=1.0, esik=0.3, on=True):
     return hc
 
 
-def oto_oku(model, gri, esik=0.3, hedef_aralik=float(os.environ.get('HEDEF_ARALIK', '30'))):
-    """Ölçeği gerçek etikete bakmadan seç: önce kaba okuma, komşu hücre aralığını ölç,
-    sonra görüntüyü hücre aralığı eğitimdeki tipik değere (~30 px) gelecek şekilde ölçekleyip yeniden oku."""
+def _puan(hc):
+    """Modelin kendinden emin olduğu hücrelerin toplam puanı (ölçek seçimi için)."""
+    return float((hc[:, 2] * np.min(np.abs(hc[:, 3:9] - 0.5) * 2, 1)).sum()) if len(hc) else 0.0
+
+
+def oto_oku(model, gri, esik=0.3, hedef_aralik=float(os.environ.get('HEDEF_ARALIK', '30')),
+            kaba=(0.6, 1.0, 1.6, 2.2)):
+    """Ölçeği gerçek etikete bakmadan seç.
+    1) Kaba tarama: birkaç ölçekte oku, en çok güvenli hücre bulunan ölçeği al (uzaktan çekilmiş, küçük hücreli sayfalar için büyütmeyi de dener).
+    2) İnce ayar: komşu hücre aralığını ölç, görüntüyü aralık eğitimdeki tipik değere (~30 px) gelecek şekilde ölçekle.
+    Son okumalar arasından en yüksek puanlı olanı döndürür."""
     from scipy.spatial import cKDTree
-    s = 1.0
+    adaylar = []
+    for s in kaba:
+        hc = oku(model, gri, s, esik, on=False); adaylar.append((_puan(hc), s, hc))
+    _, s, hc = max(adaylar, key=lambda a: a[0])
     for _ in range(2):
-        hc = oku(model, gri, s, esik, on=False)
         if len(hc) < 8: break
         d, _ = cKDTree(hc[:, :2]).query(hc[:, :2], k=2)
         c = float(np.median(d[:, 1])) * s  # ölçekli görüntüdeki aralık
-        yeni = float(np.clip(s * hedef_aralik / max(c, 1e-3), 0.3, 2.0))
+        yeni = float(np.clip(s * hedef_aralik / max(c, 1e-3), 0.3, 3.0))
         if abs(yeni - s) / s < 0.1: break
         s = yeni
-    return oku(model, gri, s, esik, on=False), round(s, 2)
+        hc = oku(model, gri, s, esik, on=False); adaylar.append((_puan(hc), s, hc))
+    p, s, hc = max(adaylar[len(kaba):] or adaylar, key=lambda a: a[0]) if len(adaylar) > len(kaba) else max(adaylar, key=lambda a: a[0])
+    return hc, round(s, 2)
 
 
 def main():
