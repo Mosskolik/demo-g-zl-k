@@ -1,0 +1,27 @@
+{
+  "outputDirectory": "public",
+  "functions": {
+    "api/chat.js": {
+      "maxDuration": 120
+    }
+  },
+  "headers": [
+    {
+      "source": "/indir/(.*)\\.apk",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.android.package-archive"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment; filename=\"matematik-asistani.apk\""
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ]
+}
